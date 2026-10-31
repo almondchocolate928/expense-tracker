@@ -2,19 +2,22 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import type { LucideIcon } from 'lucide-react'
 import {
   Check,
+  ChevronRight,
   Database,
   Palette,
   Share,
   Smartphone,
   Tag,
+  Tags,
 } from 'lucide-react'
 import { useState } from 'react'
 import { db } from '../../db/database'
+import { CategoryManager } from '../categories/CategoryManager'
 import { getLocale } from '../../lib/money'
 import { isIOS, isStandalone } from '../../lib/platform'
 import type { ReactNode } from 'react'
 
-const APP_VERSION = '0.1.0'
+const APP_VERSION = '0.2.0'
 
 interface SectionProps {
   title: string
@@ -56,9 +59,13 @@ function Row({ icon: Icon, label, value, detail }: RowProps) {
 
 export function SettingsScreen() {
   const settings = useLiveQuery(() => db.settings.get('app'), [])
+  const categories = useLiveQuery(() => db.categories.toArray(), [])
   const [installed] = useState(() => isStandalone())
   const [ios] = useState(() => isIOS())
+  const [categoriesOpen, setCategoriesOpen] = useState(false)
   const locale = settings?.locale ?? getLocale()
+  const activeCategories = (categories ?? []).filter((category) => !category.archived).length
+  const archivedCategories = (categories ?? []).filter((category) => category.archived).length
 
   return (
     <div>
@@ -104,6 +111,24 @@ export function SettingsScreen() {
       </Section>
 
       <Section title="Preferences">
+        <button
+          type="button"
+          onClick={() => setCategoriesOpen(true)}
+          className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors active:bg-surface-2"
+        >
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-2 text-secondary">
+            <Tags size={18} strokeWidth={1.9} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-medium">Categories</p>
+            <p className="mt-0.5 text-[12px] text-secondary">
+              {activeCategories} active
+              {archivedCategories > 0 ? ` · ${archivedCategories} archived` : ''}
+            </p>
+          </div>
+          <ChevronRight size={18} className="shrink-0 text-tertiary" />
+        </button>
+        <div className="border-t border-separator" />
         <Row icon={Tag} label="Currency" value={settings?.currency ?? '—'} />
         <div className="border-t border-separator" />
         <Row icon={Palette} label="Locale" value={locale} />
@@ -137,7 +162,7 @@ export function SettingsScreen() {
       <Section title="About">
         <Row icon={Tag} label="Version" value={APP_VERSION} />
         <div className="border-t border-separator" />
-        <Row icon={Database} label="Build" value="Core loop" />
+        <Row icon={Database} label="Build" value="M2" />
       </Section>
 
       <p className="px-6 pb-4 pt-6 text-center text-[11px] leading-relaxed text-tertiary">
@@ -145,6 +170,8 @@ export function SettingsScreen() {
         <br />
         No accounts, no analytics, no tracking.
       </p>
+
+      {categoriesOpen && <CategoryManager onClose={() => setCategoriesOpen(false)} />}
     </div>
   )
 }

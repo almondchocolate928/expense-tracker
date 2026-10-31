@@ -176,6 +176,17 @@ export function inputToMinor(
   return integer * 10 ** digits + Number(fraction || '0')
 }
 
+/** Convert stored minor units back into the plain entry string ("12.50"). */
+export function minorToEntry(
+  minor: number,
+  currency: string,
+  locale: string,
+): string {
+  const digits = currencyFractionDigits(currency, locale)
+  if (digits === 0) return String(Math.trunc(minor))
+  return (minor / 10 ** digits).toFixed(digits)
+}
+
 /** Handle one press on the custom amount keypad. */
 export function applyAmountKey(
   entry: string,

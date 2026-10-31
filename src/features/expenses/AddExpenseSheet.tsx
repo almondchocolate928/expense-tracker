@@ -1,4 +1,4 @@
-import { Calendar, Delete } from 'lucide-react'
+import { Calendar, Delete, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -13,28 +13,39 @@ import {
   getLocale,
   groupAmountEntry,
   inputToMinor,
+  minorToEntry,
 } from '../../lib/money'
+import type { Expense } from '../../types'
 
 const LAST_CATEGORY_KEY = 'last-category-id'
 
 interface AddExpenseSheetProps {
   month: Date
+  expense?: Expense
   onClose: () => void
   onSaved: (date: string) => void
+  onDeleted?: (expense: Expense) => void
 }
 
-export function AddExpenseSheet({ month, onClose, onSaved }: AddExpenseSheetProps) {
+export function AddExpenseSheet({
+  month,
+  expense,
+  onClose,
+  onSaved,
+  onDeleted,
+}: AddExpenseSheetProps) {
+  const isEdit = expense !== undefined
   const settings = useLiveQuery(() => db.settings.get('app'), [])
-  const categories = useLiveQuery(async () => {
-    const all = await db.categories.orderBy('sortOrder').toArray()
-    return all.filter((category) => !category.archived)
-  }, [])
+  const categories = useLiveQuery(() => db.categories.orderBy('sortOrder').toArray(), [])
 
-  const [amount, setAmount] = useState('')
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
-  const [date, setDate] = useState(() => expenseDateDefault(month))
-  const [note, setNote] = useState('')
+  const [amountOverride, setAmountOverride] = useState<string | null>(null)
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
+    expense?.categoryId ?? null,
+  )
+  const [date, setDate] = useState(() => expense?.date ?? expenseDateDefault(month))
+  const [note, setNote] = useState(expense?.note ?? '')
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const savingRef = useRef(false)
 
@@ -42,19 +53,31 @@ export function AddExpenseSheet({ month, onClose, onSaved }: AddExpenseSheetProp
   const locale = settings?.locale ?? getLocale()
   const fractionDigits = currencyFractionDigits(currency, locale)
   const decimal = decimalSeparator(locale)
+
+  const visibleCategories = useMemo(
+    () =>
+      (categories ?? []).filter(
+        (category) => !category.archived || category.id === expense?.categoryId,
+      ),
+    [categories, expense?.categoryId],
+  )
+
   const defaultCategoryId = useMemo(() => {
-    if (!categories?.length) return null
+    if (!visibleCategories.length) return null
     try {
       const last = localStorage.getItem(LAST_CATEGORY_KEY)
-      if (last && categories.some((category) => category.id === last)) return last
+      if (last && visibleCategories.some((category) => category.id === last)) return last
     } catch {
       // Ignore storage restrictions.
     }
-    return categories[0].id
-  }, [categories])
+    return visibleCategories[0].id
+  }, [visibleCategories])
+
   const categoryId = selectedCategoryId ?? defaultCategoryId
+  const amount =
+    amountOverride ?? (expense ? minorToEntry(expense.amount, currency, locale) : '')
   const minor = inputToMinor(amount, currency, locale)
-  const canSave = minor > 0 && categoryId !== null && !saving
+  const canSave = minor > 0 && categoryId !== null && !saving && !deleting
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow
@@ -72,7 +95,12 @@ export function AddExpenseSheet({ month, onClose, onSaved }: AddExpenseSheetProp
   }, [onClose])
 
   function press(key: string) {
-    setAmount((current) => applyAmountKey(current, key, fractionDigits))
+    // In edit mode the amount is prefilled; the first digit starts a fresh amount.
+    if (isEdit && amountOverride === null && /^\d$/.test(key)) {
+      setAmountOverride(key)
+      return
+    }
+    setAmountOverride(applyAmountKey(amount, key, fractionDigits))
   }
 
   async function save() {
@@ -83,20 +111,30 @@ export function AddExpenseSheet({ month, onClose, onSaved }: AddExpenseSheetProp
 
     try {
       const now = Date.now()
-      await db.expenses.add({
-        id: newId(),
-        amount: minor,
-        categoryId,
-        date,
-        note: note.trim(),
-        createdAt: now,
-        updatedAt: now,
-        deletedAt: null,
-      })
-      try {
-        localStorage.setItem(LAST_CATEGORY_KEY, categoryId)
-      } catch {
-        // Remembering the last category is optional.
+      if (expense) {
+        await db.expenses.update(expense.id, {
+          amount: minor,
+          categoryId,
+          date,
+          note: note.trim(),
+          updatedAt: now,
+        })
+      } else {
+        await db.expenses.add({
+          id: newId(),
+          amount: minor,
+          categoryId,
+          date,
+          note: note.trim(),
+          createdAt: now,
+          updatedAt: now,
+          deletedAt: null,
+        })
+        try {
+          localStorage.setItem(LAST_CATEGORY_KEY, categoryId)
+        } catch {
+          // Remembering the last category is optional.
+        }
       }
       void requestPersistentStorage()
       onSaved(date)
@@ -104,6 +142,24 @@ export function AddExpenseSheet({ month, onClose, onSaved }: AddExpenseSheetProp
       savingRef.current = false
       setSaving(false)
       setError('Could not save this expense. Please try again.')
+    }
+  }
+
+  async function remove() {
+    if (!expense || savingRef.current || deleting) return
+    savingRef.current = true
+    setDeleting(true)
+    setError(null)
+
+    try {
+      const now = Date.now()
+      await db.expenses.update(expense.id, { deletedAt: now, updatedAt: now })
+      if (onDeleted) onDeleted(expense)
+      else onClose()
+    } catch {
+      savingRef.current = false
+      setDeleting(false)
+      setError('Could not delete this expense. Please try again.')
     }
   }
 
@@ -126,7 +182,7 @@ export function AddExpenseSheet({ month, onClose, onSaved }: AddExpenseSheetProp
     <div className="fixed inset-0 z-50">
       <button
         type="button"
-        aria-label="Close add expense"
+        aria-label="Close expense sheet"
         onClick={onClose}
         className="sheet-backdrop animate-fade-in absolute inset-0 h-full w-full"
       />
@@ -134,7 +190,7 @@ export function AddExpenseSheet({ month, onClose, onSaved }: AddExpenseSheetProp
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Add expense"
+        aria-label={isEdit ? 'Edit expense' : 'Add expense'}
         className="animate-sheet-in absolute inset-x-0 bottom-0 mx-auto w-full max-w-[560px]"
       >
         <div className="sheet-glass flex max-h-[94dvh] flex-col rounded-t-[30px] border-t border-separator shadow-[0_-20px_60px_rgba(0,0,0,0.25)]">
@@ -148,8 +204,26 @@ export function AddExpenseSheet({ month, onClose, onSaved }: AddExpenseSheetProp
             >
               Cancel
             </button>
-            <p className="text-center text-[16px] font-semibold">New Expense</p>
-            <span aria-hidden="true" />
+            <p className="text-center text-[16px] font-semibold">
+              {isEdit ? 'Edit Expense' : 'New Expense'}
+            </p>
+            {isEdit ? (
+              <button
+                type="button"
+                onClick={() => void remove()}
+                disabled={saving || deleting}
+                aria-label="Delete expense"
+                className="pressable flex h-10 w-10 items-center justify-center justify-self-end rounded-full text-negative active:bg-surface-2 disabled:opacity-40"
+              >
+                {deleting ? (
+                  <span className="text-[13px] font-medium">…</span>
+                ) : (
+                  <Trash2 size={19} />
+                )}
+              </button>
+            ) : (
+              <span aria-hidden="true" />
+            )}
           </div>
 
           <div className="no-scrollbar flex-1 overflow-y-auto overscroll-contain px-5 pb-2">
@@ -173,7 +247,7 @@ export function AddExpenseSheet({ month, onClose, onSaved }: AddExpenseSheetProp
 
             <div className="-mx-5 mt-1">
               <div className="no-scrollbar flex gap-2 overflow-x-auto px-5 pb-1">
-                {categories?.map((category) => {
+                {visibleCategories.map((category) => {
                   const selected = category.id === categoryId
                   return (
                     <button
@@ -245,7 +319,9 @@ export function AddExpenseSheet({ month, onClose, onSaved }: AddExpenseSheetProp
 
           <div className="shrink-0 px-5 pb-[max(env(safe-area-inset-bottom),16px)] pt-3">
             {error && (
-              <p className="mb-2 text-center text-[13px] font-medium text-negative">{error}</p>
+              <p className="mb-2 text-center text-[13px] font-medium text-negative" role="alert">
+                {error}
+              </p>
             )}
             <button
               type="button"
@@ -253,7 +329,7 @@ export function AddExpenseSheet({ month, onClose, onSaved }: AddExpenseSheetProp
               disabled={!canSave}
               className="pressable h-[52px] w-full rounded-[16px] bg-accent text-[17px] font-semibold text-white disabled:bg-surface-2 disabled:text-tertiary"
             >
-              {saving ? 'Saving…' : 'Save expense'}
+              {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Save expense'}
             </button>
           </div>
         </div>

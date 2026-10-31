@@ -1,6 +1,6 @@
 # Expense Tracker — Build Plan
 
-**Status:** M0 + M1 deployed (v0.1.0); M2 next
+**Status:** M0–M2 complete (v0.2.0); M4 backups next
 **Date:** 2026-11-01
 **Type:** Installable Progressive Web App (PWA) for iPhone
 **Target device:** iPhone, iOS 27.2
@@ -10,15 +10,16 @@
 
 ### Current state
 
-- Deployed and verified on GitHub Pages; the Actions deployment succeeded for commit `6af79db`
+- v0.2.0 adds tap-to-edit, delete with Undo, and full category management
+- Categories: add, rename, icon/color, reorder, archive, and restore; archived categories remain on past expenses
 - Installable PWA shell with custom iOS-style design, light/dark mode, safe-area handling
-- Working core loop: add expense (custom keypad, category, date, note) → Home list + monthly total
+- Core loop: add expense (custom keypad, category, date, note) → Home list + monthly total
 - Local persistence in IndexedDB, verified across reloads
 - Monthly navigation and same-period comparison to last month
 - Insights: month total + category breakdown (six-month charts pending)
 - PWA: manifest, icons, offline app shell, update prompt, iOS install card
-- Verified live: add/save, persistence, offline reload, service worker scope, install card
-- Not yet: edit/delete, category management, backup/restore, real-device install
+- Deployment verified on GitHub Pages; M2 flows verified in Playwright, including iPhone SE layout
+- Not yet: backup/restore, filters, six-month charts, real-device install
 
 ---
 
@@ -369,12 +370,12 @@ When `display-mode` is not standalone and the device is iOS Safari, show a dismi
 | --- | --- | --- |
 | **M0 — Foundations** | Vite/React/TS scaffold, Tailwind tokens, tab shell, PWA manifest + icons, GitHub Pages workflow, installable on iPhone | ✅ Complete — live on GitHub Pages |
 | **M1 — Core loop** | Dexie schema + seed categories, add-expense sheet with keypad, Home list + monthly total, instant persistence | ✅ Complete |
-| **M2 — Manage** | Edit/delete + undo, category management (add/edit/reorder/archive), filters | ⏭ Next |
+| **M2 — Manage** | Edit/delete + undo, category management (add/edit/reorder/archive), filters | ✅ Complete (filters deferred) |
 | **M3 — Insights** | 6-month bar chart, category donut/list, summary stats, month sync with Home | ◐ Category breakdown shipped; trends pending |
-| **M4 — Data safety & settings** | Settings screen, currency + theme, JSON backup/restore, CSV export, backup reminder | Pending |
+| **M4 — Data safety & settings** | Settings screen, currency + theme, JSON backup/restore, CSV export, backup reminder | ⏭ Next |
 | **M5 — Polish & device QA** | Animations, safe areas, dark mode audit, offline/update flows, accessibility, iPhone testing, bug fixes | Pending |
 
-**Remaining:** roughly 3–5 focused days after device review.
+**Remaining:** roughly 2–4 focused days after device review.
 
 **M0 exit criteria:** the app is reachable on a public HTTPS URL, installs to the home screen, launches standalone, and renders the shell offline.
 **v1 exit criteria:** all flows work on-device in light/dark, offline, with a successful backup → wipe → restore cycle.
@@ -386,8 +387,8 @@ When `display-mode` is not standalone and the device is iOS Safari, show a dismi
 **Automated**
 
 - Unit: money parsing/formatting (including zero-decimal currencies), date grouping, month-range boundaries, backup validation and round-trip.
-- Component: amount keypad, add form validation.
-- Optional Playwright smoke test at iPhone viewport: add → edit → delete → reload persists.
+- Component: amount keypad, add/edit form validation.
+- Playwright smoke at iPhone viewport: add → edit amount/date → reload persists → delete/undo → category add/rename/reorder/archive/restore.
 
 **Manual on iPhone**
 
@@ -429,6 +430,7 @@ When `display-mode` is not standalone and the device is iOS Safari, show a dismi
 
 ## 15. Immediate Next Steps
 
-1. Install the live app on the iPhone (Safari → Share → Add to Home Screen) and confirm standalone launch, safe areas, and offline reload.
-2. Build M2: tap-to-edit, delete with Undo, category management, and basic filtering.
-3. Build M4 backups before using the app for real data; storage on iOS can be evicted.
+1. Install/deploy v0.2.0 and confirm edit, delete/Undo, and category management on the iPhone.
+2. Build M4 backups (JSON export/import + CSV) before using the app for real data; storage on iOS can be evicted.
+3. Add the six-month trend and summary stats to Insights.
+4. Revisit search/category filters in v1.1.

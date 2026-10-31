@@ -4,11 +4,15 @@ A private, offline-first expense tracker built as an installable PWA for iPhone.
 
 **Live app:** <https://almondchocolate928.github.io/expense-tracker/>
 
-> **Status: v0.1.0 (core loop).** You can add and review expenses with full local persistence. Editing, deleting, category management, and backup/restore are the next milestones. Until backups ship, do not treat this as your only record.
+> **Status: v0.2.0 (manage).** You can add, edit, delete with Undo, and fully manage categories, all with local persistence. Backup/restore is the next milestone. Until backups ship, do not treat this as your only record.
 
 ## What works today
 
 - Fast add flow: custom amount keypad, category chips, native date picker, optional note
+- Tap any expense to edit its amount, category, date, or note
+- Delete with an Undo toast (soft delete, reversible for 6 seconds)
+- Category management: add, rename, change icon/color, reorder, archive, and restore
+- Archived categories stay on past expenses but disappear from the new-expense picker
 - Monthly Home screen with total, expense count, and comparison to the same point last month
 - Expenses grouped by day with per-day totals
 - Month navigation (past months, back to today)
@@ -97,11 +101,12 @@ When multi-device sync is added later, the data model is ready for it: UUID ids,
 
 ```
 src/
-  components/        Tab bar, update prompt, install card
+  components/        Tab bar, undo toast, update prompt, install card
   db/                Dexie database and default categories
   features/
-    expenses/        Add-expense sheet
-    home/            Monthly list and totals
+    categories/      Category manager and editor
+    expenses/        Add/edit-expense sheet
+    home/            Monthly list, totals, and edit entry point
     insights/        Category breakdown
     settings/        App, preferences, data, and about sections
   lib/               Money, dates, platform, colors, ids
@@ -113,9 +118,8 @@ PLAN.md              Product and architecture plan
 
 ## Known limitations
 
-- No edit or delete yet (M2)
-- No category management yet (M2)
 - No backup/restore yet (M4) — data loss is possible
+- No search or category filters yet (deferred)
 - No automatic sync; PWAs cannot access iCloud/CloudKit
 - No home-screen widgets, haptics, or App Store distribution
 - Charts beyond the category breakdown are pending (M3)

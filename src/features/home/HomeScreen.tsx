@@ -27,6 +27,7 @@ interface HomeScreenProps {
   month: Date
   onMonthChange: (month: Date) => void
   onAdd: () => void
+  onEdit: (expense: Expense) => void
 }
 
 interface DayGroup {
@@ -55,7 +56,7 @@ function groupByDay(expenses: Expense[]): DayGroup[] {
     })
 }
 
-export function HomeScreen({ month, onMonthChange, onAdd }: HomeScreenProps) {
+export function HomeScreen({ month, onMonthChange, onAdd, onEdit }: HomeScreenProps) {
   const settings = useLiveQuery(() => db.settings.get('app'), [])
   const categories = useLiveQuery(() => db.categories.toArray(), [])
 
@@ -230,7 +231,16 @@ export function HomeScreen({ month, onMonthChange, onAdd }: HomeScreenProps) {
                       key={expense.id}
                       className={index > 0 ? 'border-t border-separator' : undefined}
                     >
-                      <div className="flex items-center gap-3 px-3.5 py-3">
+                      <button
+                        type="button"
+                        onClick={() => onEdit(expense)}
+                        aria-label={`Edit ${category?.name ?? 'Uncategorized'} expense, ${formatMoney(
+                          expense.amount,
+                          currency,
+                          locale,
+                        )}`}
+                        className="flex w-full items-center gap-3 px-3.5 py-3 text-left transition-colors active:bg-surface-2"
+                      >
                         <div
                           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[19px]"
                           style={{
@@ -253,7 +263,7 @@ export function HomeScreen({ month, onMonthChange, onAdd }: HomeScreenProps) {
                         <p className="amount-tabular shrink-0 text-[16px] font-semibold">
                           {formatMoney(expense.amount, currency, locale)}
                         </p>
-                      </div>
+                      </button>
                     </div>
                   )
                 })}
