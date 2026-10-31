@@ -2,6 +2,8 @@
 
 A private, offline-first expense tracker built as an installable PWA for iPhone.
 
+**Live app:** <https://almondchocolate928.github.io/expense-tracker/>
+
 > **Status: v0.1.0 (core loop).** You can add and review expenses with full local persistence. Editing, deleting, category management, and backup/restore are the next milestones. Until backups ship, do not treat this as your only record.
 
 ## What works today

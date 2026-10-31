@@ -1,20 +1,23 @@
 # Expense Tracker — Build Plan
 
-**Status:** M0 + M1 implemented (v0.1.0); M2 next
-**Date:** 2026-10-31
+**Status:** M0 + M1 deployed (v0.1.0); M2 next
+**Date:** 2026-11-01
 **Type:** Installable Progressive Web App (PWA) for iPhone
 **Target device:** iPhone, iOS 27.2
+**Live app:** <https://almondchocolate928.github.io/expense-tracker/>
+**Repository:** <https://github.com/almondchocolate928/expense-tracker>
 **Owner:** Personal use
 
 ### Current state
 
+- Deployed and verified on GitHub Pages; the Actions deployment succeeded for commit `6af79db`
 - Installable PWA shell with custom iOS-style design, light/dark mode, safe-area handling
 - Working core loop: add expense (custom keypad, category, date, note) → Home list + monthly total
 - Local persistence in IndexedDB, verified across reloads
 - Monthly navigation and same-period comparison to last month
 - Insights: month total + category breakdown (six-month charts pending)
 - PWA: manifest, icons, offline app shell, update prompt, iOS install card
-- Verified offline reload and GitHub Pages subpath builds locally
+- Verified live: add/save, persistence, offline reload, service worker scope, install card
 - Not yet: edit/delete, category management, backup/restore, real-device install
 
 ---
@@ -364,7 +367,7 @@ When `display-mode` is not standalone and the device is iOS Safari, show a dismi
 
 | Milestone | Deliverable | Status |
 | --- | --- | --- |
-| **M0 — Foundations** | Vite/React/TS scaffold, Tailwind tokens, tab shell, PWA manifest + icons, GitHub Pages workflow, installable on iPhone | ✅ Code complete; deploy pending repo push |
+| **M0 — Foundations** | Vite/React/TS scaffold, Tailwind tokens, tab shell, PWA manifest + icons, GitHub Pages workflow, installable on iPhone | ✅ Complete — live on GitHub Pages |
 | **M1 — Core loop** | Dexie schema + seed categories, add-expense sheet with keypad, Home list + monthly total, instant persistence | ✅ Complete |
 | **M2 — Manage** | Edit/delete + undo, category management (add/edit/reorder/archive), filters | ⏭ Next |
 | **M3 — Insights** | 6-month bar chart, category donut/list, summary stats, month sync with Home | ◐ Category breakdown shipped; trends pending |
@@ -426,7 +429,6 @@ When `display-mode` is not standalone and the device is iOS Safari, show a dismi
 
 ## 15. Immediate Next Steps
 
-1. Create the GitHub repository, push this project, and enable **Settings → Pages → Source: GitHub Actions**.
-2. Install the deployed app on the iPhone (Safari → Share → Add to Home Screen) and confirm standalone launch, safe areas, and offline reload.
-3. Build M2: tap-to-edit, delete with Undo, category management, and basic filtering.
-4. Build M4 backups before using the app for real data; storage on iOS can be evicted.
+1. Install the live app on the iPhone (Safari → Share → Add to Home Screen) and confirm standalone launch, safe areas, and offline reload.
+2. Build M2: tap-to-edit, delete with Undo, category management, and basic filtering.
+3. Build M4 backups before using the app for real data; storage on iOS can be evicted.
