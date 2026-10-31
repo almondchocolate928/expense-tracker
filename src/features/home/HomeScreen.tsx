@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import {
   ChevronLeft,
   ChevronRight,
+  Download,
   ReceiptText,
   TrendingDown,
   TrendingUp,
@@ -28,6 +29,7 @@ interface HomeScreenProps {
   onMonthChange: (month: Date) => void
   onAdd: () => void
   onEdit: (expense: Expense) => void
+  onOpenSettings: () => void
 }
 
 interface DayGroup {
@@ -56,7 +58,13 @@ function groupByDay(expenses: Expense[]): DayGroup[] {
     })
 }
 
-export function HomeScreen({ month, onMonthChange, onAdd, onEdit }: HomeScreenProps) {
+export function HomeScreen({
+  month,
+  onMonthChange,
+  onAdd,
+  onEdit,
+  onOpenSettings,
+}: HomeScreenProps) {
   const settings = useLiveQuery(() => db.settings.get('app'), [])
   const categories = useLiveQuery(() => db.categories.toArray(), [])
 
@@ -83,6 +91,10 @@ export function HomeScreen({ month, onMonthChange, onAdd, onEdit }: HomeScreenPr
     },
     [comparison.start, comparison.end],
   )
+  const totalExpenseCount = useLiveQuery(
+    () => db.expenses.filter((expense) => expense.deletedAt === null).count(),
+    [],
+  )
 
   const currency = settings?.currency ?? 'USD'
   const locale = settings?.locale ?? getLocale()
@@ -104,6 +116,8 @@ export function HomeScreen({ month, onMonthChange, onAdd, onEdit }: HomeScreenPr
       : 0
   const isUp = percentChange > 0
   const current = isCurrentMonth(month)
+  const needsBackup =
+    (totalExpenseCount ?? 0) > 0 && settings?.lastBackupAt === null
 
   return (
     <div>
@@ -183,6 +197,28 @@ export function HomeScreen({ month, onMonthChange, onAdd, onEdit }: HomeScreenPr
       </section>
 
       <InstallCard />
+
+      {needsBackup && (
+        <div className="mx-4 mt-5 flex items-start gap-3 rounded-[18px] border border-separator bg-surface p-3.5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
+            <Download size={19} strokeWidth={2} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-semibold">Back up your expenses</p>
+            <p className="mt-0.5 text-[12px] leading-snug text-secondary">
+              iOS can clear local storage. Save a copy to Files or iCloud Drive.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            aria-label="Open backup settings"
+            className="shrink-0 rounded-full bg-accent-soft px-3 py-1.5 text-[12px] font-semibold text-accent"
+          >
+            Open
+          </button>
+        </div>
+      )}
 
       {expenses === undefined ? (
         <div className="mt-7 px-4">

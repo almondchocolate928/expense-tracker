@@ -4,7 +4,7 @@ A private, offline-first expense tracker built as an installable PWA for iPhone.
 
 **Live app:** <https://almondchocolate928.github.io/expense-tracker/>
 
-> **Status: v0.2.0 (manage).** You can add, edit, delete with Undo, and fully manage categories, all with local persistence. Backup/restore is the next milestone. Until backups ship, do not treat this as your only record.
+> **Status: v0.3.0 (backup).** You can add, edit, delete with Undo, manage categories, and back up/restore your data. Currency/theme controls and charts are the remaining feature work.
 
 ## What works today
 
@@ -17,6 +17,9 @@ A private, offline-first expense tracker built as an installable PWA for iPhone.
 - Expenses grouped by day with per-day totals
 - Month navigation (past months, back to today)
 - Insights tab with month total and category breakdown
+- JSON backup/restore through Files or iCloud Drive
+- CSV export for Numbers or Excel
+- A Home reminder until the first backup is made
 - Light and dark mode following the system
 - Installable PWA with offline app shell, icons, standalone launch, and update prompt
 - iOS safe-area handling and an in-app "Add to Home Screen" tip
@@ -93,7 +96,11 @@ Installed web apps open full-screen on iOS 26 and later. Without installation, t
 
 Everything is stored on the device in IndexedDB. There is no network request for app data.
 
-**Important:** iOS can evict local storage when space is low, and deleting the Home Screen app can remove its data. JSON backup/restore is the next milestone (M4). Until then, treat this build as a preview.
+**Important:** iOS can evict local storage when space is low, and deleting the Home Screen app can remove its data. Use **Settings → Your data → Back up now** regularly. The app reminds you on Home until the first backup exists.
+
+Backups are JSON files shared through the iOS share sheet to Files or iCloud Drive. Restoring validates the file, downloads a safety copy of the current data, then replaces everything. CSV export is available for spreadsheets.
+
+Backup files are **not encrypted** — they contain your expense data in plain JSON. Store them somewhere private.
 
 When multi-device sync is added later, the data model is ready for it: UUID ids, `updatedAt`, and soft deletes.
 
@@ -102,13 +109,13 @@ When multi-device sync is added later, the data model is ready for it: UUID ids,
 ```
 src/
   components/        Tab bar, undo toast, update prompt, install card
-  db/                Dexie database and default categories
+  db/                Dexie database, defaults, and backup/restore
   features/
     categories/      Category manager and editor
     expenses/        Add/edit-expense sheet
     home/            Monthly list, totals, and edit entry point
     insights/        Category breakdown
-    settings/        App, preferences, data, and about sections
+    settings/        App, preferences, data, backup, and about
   lib/               Money, dates, platform, colors, ids
   types.ts
 scripts/             Icon generation
@@ -118,7 +125,7 @@ PLAN.md              Product and architecture plan
 
 ## Known limitations
 
-- No backup/restore yet (M4) — data loss is possible
+- Currency and appearance controls are not editable yet (M4 follow-up)
 - No search or category filters yet (deferred)
 - No automatic sync; PWAs cannot access iCloud/CloudKit
 - No home-screen widgets, haptics, or App Store distribution

@@ -4,20 +4,33 @@ import {
   Check,
   ChevronRight,
   Database,
+  Download,
+  FileSpreadsheet,
   Palette,
   Share,
   Smartphone,
   Tag,
   Tags,
+  Upload,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import type { ChangeEvent, ReactNode } from 'react'
 import { db } from '../../db/database'
-import { CategoryManager } from '../categories/CategoryManager'
+import {
+  backUpNow,
+  downloadSafetyBackup,
+  exportCsv,
+  isShareCanceled,
+  parseBackupFile,
+  restoreBackup,
+  type BackupFile,
+} from '../../db/backup'
 import { getLocale } from '../../lib/money'
 import { isIOS, isStandalone } from '../../lib/platform'
-import type { ReactNode } from 'react'
+import { CategoryManager } from '../categories/CategoryManager'
+import { RestoreConfirm } from './RestoreConfirm'
 
-const APP_VERSION = '0.2.0'
+const APP_VERSION = '0.3.0'
 
 interface SectionProps {
   title: string
@@ -57,15 +70,165 @@ function Row({ icon: Icon, label, value, detail }: RowProps) {
   )
 }
 
+interface ActionRowProps {
+  icon: LucideIcon
+  title: string
+  detail: string
+  value?: string
+  disabled?: boolean
+  onClick: () => void
+}
+
+function ActionRow({
+  icon: Icon,
+  title,
+  detail,
+  value,
+  disabled,
+  onClick,
+}: ActionRowProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors active:bg-surface-2 disabled:opacity-50"
+    >
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-2 text-secondary">
+        <Icon size={18} strokeWidth={1.9} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[15px] font-medium">{title}</p>
+        <p className="mt-0.5 text-[12px] leading-snug text-secondary">{detail}</p>
+      </div>
+      {value && (
+        <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.5px] text-tertiary">
+          {value}
+        </span>
+      )}
+    </button>
+  )
+}
+
+interface DataStatus {
+  message: string
+  error?: boolean
+}
+
 export function SettingsScreen() {
   const settings = useLiveQuery(() => db.settings.get('app'), [])
   const categories = useLiveQuery(() => db.categories.toArray(), [])
   const [installed] = useState(() => isStandalone())
   const [ios] = useState(() => isIOS())
   const [categoriesOpen, setCategoriesOpen] = useState(false)
+  const [backupBusy, setBackupBusy] = useState(false)
+  const [backupStatus, setBackupStatus] = useState<DataStatus | null>(null)
+  const [pendingRestore, setPendingRestore] = useState<{
+    backup: BackupFile
+    fileName: string
+  } | null>(null)
+  const restoreInputRef = useRef<HTMLInputElement>(null)
   const locale = settings?.locale ?? getLocale()
   const activeCategories = (categories ?? []).filter((category) => !category.archived).length
   const archivedCategories = (categories ?? []).filter((category) => category.archived).length
+
+  const lastBackupLabel = settings
+    ? settings.lastBackupAt
+      ? new Intl.DateTimeFormat(locale, {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        }).format(settings.lastBackupAt)
+      : 'Never'
+    : '—'
+
+  async function handleBackup() {
+    if (backupBusy) return
+    setBackupBusy(true)
+    setBackupStatus(null)
+
+    try {
+      const method = await backUpNow()
+      setBackupStatus({
+        message:
+          method === 'shared'
+            ? 'Backup shared. Save it to Files or iCloud Drive.'
+            : 'Backup downloaded. Keep it somewhere safe.',
+      })
+    } catch (error) {
+      if (!isShareCanceled(error)) {
+        setBackupStatus({
+          message: 'Could not create the backup. Please try again.',
+          error: true,
+        })
+      }
+    } finally {
+      setBackupBusy(false)
+    }
+  }
+
+  async function handleCsv() {
+    if (backupBusy) return
+    setBackupBusy(true)
+    setBackupStatus(null)
+
+    try {
+      await exportCsv()
+      setBackupStatus({ message: 'CSV exported.' })
+    } catch {
+      setBackupStatus({
+        message: 'Could not export CSV. Please try again.',
+        error: true,
+      })
+    } finally {
+      setBackupBusy(false)
+    }
+  }
+
+  function handleRestoreFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0]
+    event.currentTarget.value = ''
+    if (!file) return
+
+    setBackupBusy(true)
+    setBackupStatus(null)
+
+    void (async () => {
+      try {
+        const backup = await parseBackupFile(file)
+        setPendingRestore({ backup, fileName: file.name })
+      } catch (error) {
+        setBackupStatus({
+          message:
+            error instanceof Error
+              ? error.message
+              : 'Could not read that backup file. Please try again.',
+          error: true,
+        })
+      } finally {
+        setBackupBusy(false)
+      }
+    })()
+  }
+
+  async function confirmRestore() {
+    if (!pendingRestore || backupBusy) return
+    setBackupBusy(true)
+
+    try {
+      await downloadSafetyBackup()
+      await restoreBackup(pendingRestore.backup)
+      setPendingRestore(null)
+      setBackupStatus({ message: 'Backup restored. All data was replaced.' })
+    } catch {
+      setPendingRestore(null)
+      setBackupStatus({
+        message: 'Could not restore that backup. Your current data was not changed.',
+        error: true,
+      })
+    } finally {
+      setBackupBusy(false)
+    }
+  }
 
   return (
     <div>
@@ -149,20 +312,68 @@ export function SettingsScreen() {
             </div>
           </div>
 
-          <div className="mt-3 rounded-[14px] bg-surface-2 px-3 py-2.5">
-            <p className="text-[12px] font-medium">Backup & restore is next</p>
-            <p className="mt-0.5 text-[12px] leading-snug text-secondary">
-              Removing the Home Screen app can erase its data, so backups are the next
-              milestone.
-            </p>
+          <div className="mt-3 flex items-center justify-between rounded-[12px] bg-surface-2 px-3 py-2">
+            <span className="text-[12px] text-secondary">Last backup</span>
+            <span className="text-[12px] font-medium">{lastBackupLabel}</span>
           </div>
+
+          {backupStatus && (
+            <p
+              role="status"
+              className={`mt-2 rounded-[12px] px-3 py-2 text-[12px] leading-snug ${
+                backupStatus.error
+                  ? 'bg-negative/10 text-negative'
+                  : 'bg-surface-2 text-secondary'
+              }`}
+            >
+              {backupStatus.message}
+            </p>
+          )}
+
+          <p className="mt-3 text-[11px] leading-snug text-tertiary">
+            Removing the Home Screen app or clearing Safari data erases local storage.
+            Keep a recent backup.
+          </p>
         </div>
+
+        <div className="border-t border-separator" />
+        <ActionRow
+          icon={Download}
+          title="Back up now"
+          detail="Share a JSON file to Files or iCloud Drive."
+          value="JSON"
+          disabled={backupBusy}
+          onClick={() => void handleBackup()}
+        />
+        <div className="border-t border-separator" />
+        <ActionRow
+          icon={Upload}
+          title="Restore from file"
+          detail="Replace this device's data with a previous backup."
+          value="JSON"
+          disabled={backupBusy}
+          onClick={() => restoreInputRef.current?.click()}
+        />
+        <div className="border-t border-separator" />
+        <ActionRow
+          icon={FileSpreadsheet}
+          title="Export CSV"
+          detail="Open your expenses in Numbers or Excel."
+          value="CSV"
+          disabled={backupBusy}
+          onClick={() => void handleCsv()}
+        />
+        <div className="border-t border-separator" />
+        <p className="px-4 py-3 text-[11px] leading-snug text-tertiary">
+          Backups contain your expense data in plain JSON and are not encrypted.
+          Store them somewhere private.
+        </p>
       </Section>
 
       <Section title="About">
         <Row icon={Tag} label="Version" value={APP_VERSION} />
         <div className="border-t border-separator" />
-        <Row icon={Database} label="Build" value="M2" />
+        <Row icon={Database} label="Build" value="Backup" />
       </Section>
 
       <p className="px-6 pb-4 pt-6 text-center text-[11px] leading-relaxed text-tertiary">
@@ -171,7 +382,27 @@ export function SettingsScreen() {
         No accounts, no analytics, no tracking.
       </p>
 
+      <input
+        ref={restoreInputRef}
+        type="file"
+        accept=".json,application/json"
+        onChange={handleRestoreFile}
+        className="hidden"
+        aria-label="Choose a backup file"
+      />
+
       {categoriesOpen && <CategoryManager onClose={() => setCategoriesOpen(false)} />}
+
+      {pendingRestore && (
+        <RestoreConfirm
+          backup={pendingRestore.backup}
+          fileName={pendingRestore.fileName}
+          locale={locale}
+          busy={backupBusy}
+          onCancel={() => setPendingRestore(null)}
+          onConfirm={() => void confirmRestore()}
+        />
+      )}
     </div>
   )
 }

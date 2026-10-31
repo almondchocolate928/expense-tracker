@@ -71,6 +71,7 @@ function App() {
               onMonthChange={setMonth}
               onAdd={() => openSheet({ mode: 'new' })}
               onEdit={(expense) => openSheet({ mode: 'edit', expense })}
+              onOpenSettings={() => setTab('settings')}
             />
           )}
           {tab === 'insights' && (
