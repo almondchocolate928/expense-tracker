@@ -49,10 +49,12 @@ npm run icons       # regenerate PWA icons from public/icon*.svg
 
 ## Deploy to GitHub Pages
 
-1. Create a GitHub repository and push this project to `main`.
-2. In the repository, open **Settings → Pages**.
-3. Under **Build and deployment**, set **Source** to **GitHub Actions**.
-4. Push to `main` (or run **Deploy to GitHub Pages** from the Actions tab).
+For a full walkthrough — authentication, enabling Pages, base paths, iPhone install steps, and troubleshooting — see **[DEPLOY.md](./DEPLOY.md)**. Short version:
+
+1. Create an **empty** GitHub repository (no README, no license).
+2. In the repository, open **Settings → Pages**, and set **Source** to **GitHub Actions**.
+3. Add the remote and push this project to `main`.
+4. Watch the **Deploy to GitHub Pages** run in the **Actions** tab.
 
 The app will be available at:
 
