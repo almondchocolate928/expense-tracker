@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2B95FF" />
+      <stop offset="1" stop-color="#0063E0" />
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.26" />
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#bg)" />
+  <circle cx="810" cy="150" r="330" fill="url(#glow)" />
+
+  <!-- keep the mark inside the 80% maskable safe zone -->
+  <g transform="translate(512 512) scale(0.7) translate(-512 -512)">
+    <rect x="300" y="246" width="448" height="154" rx="77" fill="#FFFFFF" opacity="0.42" />
+    <rect x="216" y="332" width="592" height="408" rx="100" fill="#003F99" opacity="0.22" />
+    <rect x="216" y="320" width="592" height="408" rx="100" fill="#FFFFFF" />
+    <rect x="216" y="462" width="592" height="88" fill="#EAF4FF" />
+    <rect x="618" y="442" width="224" height="128" rx="64" fill="#D6E9FF" />
+    <circle cx="716" cy="506" r="27" fill="#0A84FF" />
+  </g>
+</svg>
