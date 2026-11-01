@@ -36,6 +36,11 @@ export interface Expense {
 
 export type ThemePreference = 'system' | 'light' | 'dark'
 
+export interface ImportMarker {
+  externalId: string
+  importedAt: number
+}
+
 export interface Settings {
   key: 'app'
   currency: string

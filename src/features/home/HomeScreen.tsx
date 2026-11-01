@@ -4,6 +4,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  Inbox,
   ReceiptText,
   TrendingDown,
   TrendingUp,
@@ -31,6 +32,8 @@ interface HomeScreenProps {
   onAdd: () => void
   onEdit: (expense: Expense) => void
   onOpenSettings: () => void
+  pendingImportsCount: number
+  onReviewImports: () => void
 }
 
 interface DayGroup {
@@ -65,6 +68,8 @@ export function HomeScreen({
   onAdd,
   onEdit,
   onOpenSettings,
+  pendingImportsCount,
+  onReviewImports,
 }: HomeScreenProps) {
   const settings = useLiveQuery(() => db.settings.get('app'), [])
   const categories = useLiveQuery(() => db.categories.toArray(), [])
@@ -200,6 +205,28 @@ export function HomeScreen({
       </section>
 
       <InstallCard />
+
+      {pendingImportsCount > 0 && (
+        <div className="mx-4 mt-5 flex items-start gap-3 rounded-[18px] border border-separator bg-surface p-3.5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
+            <Inbox size={19} strokeWidth={2} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-semibold">Imported transactions</p>
+            <p className="mt-0.5 text-[12px] leading-snug text-secondary">
+              {pendingImportsCount} notification
+              {pendingImportsCount === 1 ? '' : 's'} waiting for review.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onReviewImports}
+            className="shrink-0 rounded-full bg-accent px-3 py-1.5 text-[12px] font-semibold text-white"
+          >
+            Review
+          </button>
+        </div>
+      )}
 
       {needsBackup && (
         <div className="mx-4 mt-5 flex items-start gap-3 rounded-[18px] border border-separator bg-surface p-3.5">

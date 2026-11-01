@@ -7,6 +7,7 @@ import {
   Download,
   FileSpreadsheet,
   Globe,
+  Inbox,
   Share,
   Smartphone,
   SunMoon,
@@ -29,11 +30,18 @@ import {
 } from '../../db/backup'
 import { getLocale } from '../../lib/money'
 import { isIOS, isStandalone } from '../../lib/platform'
+import {
+  normalizeInboxUrl,
+  readInboxConfig,
+  testInboxConnection,
+  validateInboxConfig,
+  writeInboxConfig,
+} from '../../lib/inbox'
 import { CategoryManager } from '../categories/CategoryManager'
 import { CurrencyPicker } from './CurrencyPicker'
 import { RestoreConfirm } from './RestoreConfirm'
 
-const APP_VERSION = '0.5.3'
+const APP_VERSION = '0.6.0'
 
 const THEMES = [
   { value: 'system', label: 'System' },
@@ -132,6 +140,13 @@ export function SettingsScreen() {
   const [categoriesOpen, setCategoriesOpen] = useState(false)
   const [currencyOpen, setCurrencyOpen] = useState(false)
   const [backupBusy, setBackupBusy] = useState(false)
+  const [inboxUrl, setInboxUrl] = useState(() => readInboxConfig()?.url ?? '')
+  const [inboxToken, setInboxToken] = useState(() => readInboxConfig()?.token ?? '')
+  const [inboxConfigured, setInboxConfigured] = useState(
+    () => readInboxConfig() !== null,
+  )
+  const [inboxBusy, setInboxBusy] = useState(false)
+  const [inboxStatus, setInboxStatus] = useState<DataStatus | null>(null)
   const [backupStatus, setBackupStatus] = useState<DataStatus | null>(null)
   const [pendingRestore, setPendingRestore] = useState<{
     backup: BackupFile
@@ -197,6 +212,46 @@ export function SettingsScreen() {
     } finally {
       setBackupBusy(false)
     }
+  }
+
+  async function handleSaveInbox() {
+    if (inboxBusy) return
+    const url = normalizeInboxUrl(inboxUrl)
+    const token = inboxToken.trim()
+    const problem = validateInboxConfig({ url, token })
+    if (problem) {
+      setInboxStatus({ message: problem, error: true })
+      return
+    }
+
+    setInboxBusy(true)
+    setInboxStatus(null)
+    try {
+      await testInboxConnection({ url, token })
+      writeInboxConfig({ url, token })
+      setInboxUrl(url)
+      setInboxToken(token)
+      setInboxConfigured(true)
+      setInboxStatus({ message: 'Inbox connected.' })
+    } catch (error) {
+      setInboxStatus({
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Could not connect to the inbox.',
+        error: true,
+      })
+    } finally {
+      setInboxBusy(false)
+    }
+  }
+
+  function handleRemoveInbox() {
+    writeInboxConfig(null)
+    setInboxConfigured(false)
+    setInboxUrl('')
+    setInboxToken('')
+    setInboxStatus({ message: 'Inbox disconnected.' })
   }
 
   function handleRestoreFile(event: ChangeEvent<HTMLInputElement>) {
@@ -374,8 +429,8 @@ export function SettingsScreen() {
             <div className="min-w-0 flex-1">
               <p className="text-[15px] font-medium">Stored on this device</p>
               <p className="mt-0.5 text-[12px] leading-snug text-secondary">
-                Your expenses live in this browser's local storage. Nothing is uploaded,
-                and no account is needed.
+                Your expense ledger lives in this browser's local storage. The
+                optional notification inbox is the only data that leaves the device.
               </p>
             </div>
           </div>
@@ -438,10 +493,106 @@ export function SettingsScreen() {
         </p>
       </Section>
 
+      <Section title="Automation">
+        <div className="p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-2 text-secondary">
+              <Inbox size={18} strokeWidth={1.9} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-medium">Notification inbox</p>
+              <p className="mt-0.5 text-[12px] leading-snug text-secondary">
+                Connect the iOS 27 Shortcut inbox. Pending imports appear on Home
+                for review.
+              </p>
+            </div>
+          </div>
+
+          <label htmlFor="inbox-url" className="mt-4 block">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.6px] text-secondary">
+              Inbox URL
+            </span>
+            <input
+              id="inbox-url"
+              type="url"
+              value={inboxUrl}
+              onChange={(event) => setInboxUrl(event.target.value)}
+              placeholder="https://expense-tracker-inbox.you.workers.dev"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              className="mt-1 h-11 w-full rounded-[12px] bg-surface-2 px-3.5 text-[16px] placeholder:text-tertiary"
+            />
+          </label>
+
+          <label htmlFor="inbox-token" className="mt-3 block">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.6px] text-secondary">
+              Read token
+            </span>
+            <input
+              id="inbox-token"
+              type="password"
+              value={inboxToken}
+              onChange={(event) => setInboxToken(event.target.value)}
+              placeholder="Worker read token"
+              autoComplete="off"
+              className="mt-1 h-11 w-full rounded-[12px] bg-surface-2 px-3.5 text-[16px] placeholder:text-tertiary"
+            />
+          </label>
+
+          {inboxStatus && (
+            <p
+              role="status"
+              className={`mt-2 rounded-[12px] px-3 py-2 text-[12px] leading-snug ${
+                inboxStatus.error
+                  ? 'bg-negative/10 text-negative'
+                  : 'bg-surface-2 text-secondary'
+              }`}
+            >
+              {inboxStatus.message}
+            </p>
+          )}
+
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={() => void handleSaveInbox()}
+              disabled={inboxBusy}
+              className="pressable h-11 flex-1 rounded-[12px] bg-accent text-[14px] font-semibold text-white disabled:opacity-50"
+            >
+              {inboxBusy ? 'Testing…' : 'Save & test'}
+            </button>
+            {inboxConfigured && (
+              <button
+                type="button"
+                onClick={handleRemoveInbox}
+                disabled={inboxBusy}
+                className="pressable h-11 rounded-[12px] bg-surface-2 px-4 text-[14px] font-medium text-secondary disabled:opacity-50"
+              >
+                Remove
+              </button>
+            )}
+          </div>
+
+          <p className="mt-3 text-[11px] leading-snug text-tertiary">
+            The read token stays on this device and is never included in backups.
+          </p>
+
+          <a
+            href="https://github.com/almondchocolate928/expense-tracker/blob/main/server/README.md"
+            target="_blank"
+            rel="noreferrer"
+            className="mt-2 inline-block text-[12px] font-medium text-accent"
+          >
+            Backend + Shortcut setup →
+          </a>
+        </div>
+      </Section>
+
       <Section title="About">
         <Row icon={Tag} label="Version" value={APP_VERSION} />
         <div className="border-t border-separator" />
-        <Row icon={Database} label="Build" value="Settings" />
+        <Row icon={Database} label="Build" value="Automation" />
       </Section>
 
       <p className="px-6 pb-4 pt-6 text-center text-[11px] leading-relaxed text-tertiary">

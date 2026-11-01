@@ -4,7 +4,7 @@ A private, offline-first expense tracker built as an installable PWA for iPhone.
 
 **Live app:** <https://almondchocolate928.github.io/expense-tracker/>
 
-> **Status: v0.5.3 (settings).** Add, edit, delete with Undo, manage categories, back up/restore, review six-month trends, and choose currency or appearance. Search/filters and final device QA remain.
+> **Status: v0.6.0 (automation inbox).** The iOS 27 Shortcut inbox and review flow are built and tested locally. The Cloudflare deployment and real-notification test are pending.
 
 ## What works today
 
@@ -22,6 +22,7 @@ A private, offline-first expense tracker built as an installable PWA for iPhone.
 - JSON backup/restore through Files or iCloud Drive
 - CSV export for Numbers or Excel
 - A Home reminder when a backup is missing or older than 30 days
+- Optional notification inbox: iOS 27 Shortcut imports appear on Home for review
 - Light and dark mode following the system
 - Installable PWA with offline app shell, icons, standalone launch, and update prompt
 - iOS safe-area handling and an in-app "Add to Home Screen" tip
@@ -94,9 +95,22 @@ The local preview must use the same `VITE_BASE_PATH` as the build.
 
 Installed web apps open full-screen on iOS 26 and later. Without installation, the app still works in a Safari tab, but it will not be standalone.
 
+## Automation inbox (optional)
+
+The app can pull raw notification imports from a small Cloudflare Worker + D1
+inbox. The iOS 27 Shortcut posts notification text; the PWA shows a review sheet
+before anything is saved. Setup, API, and Shortcut instructions live in
+[`server/README.md`](./server/README.md).
+
+This is a one-way inbox, not full sync. It is optional and disabled until you
+enter the Worker URL and read token in **Settings → Automation**.
+
 ## Data & privacy
 
-Everything is stored on the device in IndexedDB. There is no network request for app data.
+The expense ledger is stored on the device in IndexedDB. If the optional
+automation inbox is enabled, raw notification text is sent to the Cloudflare
+Worker you deploy and fetched by the PWA for review. It is not sent to this
+project or any third-party service.
 
 **Important:** iOS can evict local storage when space is low, and deleting the Home Screen app can remove its data. Use **Settings → Your data → Back up now** regularly. The app reminds you on Home when a backup is missing or stale.
 
@@ -116,10 +130,12 @@ src/
     categories/      Category manager and editor
     expenses/        Add/edit-expense sheet
     home/            Monthly list, totals, and edit entry point
+    imports/         Notification inbox review flow
     insights/        Category breakdown
-    settings/        App, preferences, data, backup, and about
-  lib/               Money, dates, platform, colors, ids
+    settings/        App, preferences, data, automation, and about
+  lib/               Money, dates, inbox, parser, platform, colors, ids
   types.ts
+server/              Cloudflare Worker + D1 inbox
 scripts/             Icon generation
 .github/workflows/   GitHub Pages deployment
 PLAN.md              Product and architecture plan
@@ -127,8 +143,9 @@ PLAN.md              Product and architecture plan
 
 ## Known limitations
 
+- The automation backend is not deployed yet; it requires a Cloudflare account
 - No search or category filters yet (deferred)
-- No automatic sync; PWAs cannot access iCloud/CloudKit
+- No automatic two-way sync; the inbox is one-way
 - No home-screen widgets, haptics, or App Store distribution
 - Currency changes relabel past amounts rather than converting them
 

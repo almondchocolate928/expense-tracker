@@ -1,11 +1,12 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { Category, Expense, Settings } from '../types'
+import type { Category, Expense, ImportMarker, Settings } from '../types'
 import { defaultCategories, defaultSettings } from './seed'
 
 class ExpenseTrackerDatabase extends Dexie {
   expenses!: EntityTable<Expense, 'id'>
   categories!: EntityTable<Category, 'id'>
   settings!: EntityTable<Settings, 'key'>
+  imports!: EntityTable<ImportMarker, 'externalId'>
 
   constructor() {
     super('expense-tracker')
@@ -14,6 +15,10 @@ class ExpenseTrackerDatabase extends Dexie {
       expenses: 'id, date, categoryId, updatedAt, deletedAt',
       categories: 'id, sortOrder, archived',
       settings: 'key',
+    })
+
+    this.version(2).stores({
+      imports: 'externalId, importedAt',
     })
 
     this.on('populate', () => this.seed())

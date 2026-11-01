@@ -1,6 +1,6 @@
 # Expense Tracker — Build Plan
 
-**Status:** M0–M4 complete (v0.5.3); M5 polish/device QA next
+**Status:** M0–M4 complete + automation inbox code (v0.6.0); Cloudflare deploy/Shortcut pending
 **Date:** 2026-11-01
 **Type:** Installable Progressive Web App (PWA) for iPhone
 **Target device:** iPhone, iOS 27.2
@@ -10,6 +10,7 @@
 
 ### Current state
 
+- v0.6.0 adds a one-way Cloudflare Worker/D1 notification inbox and a PWA review flow
 - v0.5.3 sends the pre-restore safety copy through the share sheet instead of opening raw JSON in a browser page
 - v0.5.2 removes the cold-start theme flash and makes the backup reminder stale-aware (30 days)
 - v0.5.1 replaces the native currency select with a searchable, fully themed picker
@@ -22,8 +23,8 @@
 - Local persistence in IndexedDB, verified across reloads
 - Insights: month hero, six-month bars, summary stats, category breakdown
 - PWA: manifest, icons, offline app shell, update prompt, iOS install card
-- Deployment verified on GitHub Pages; M2/M3/M4 flows verified in Playwright, including iPhone SE layout
-- Not yet: search/filters, real-device install/QA
+- Deployment verified on GitHub Pages; M2/M3/M4 and inbox flows verified locally in Playwright, including iPhone SE layout
+- Not yet: Cloudflare inbox deployment, real notification Shortcut, search/filters, real-device install/QA
 
 ---
 
@@ -378,8 +379,9 @@ When `display-mode` is not standalone and the device is iOS Safari, show a dismi
 | **M3 — Insights** | 6-month bar chart, category list, summary stats, month sync with Home | ✅ Complete |
 | **M4 — Data safety & settings** | Settings screen, currency + theme, JSON backup/restore, CSV export, backup reminder | ✅ Complete |
 | **M5 — Polish & device QA** | Animations, safe areas, dark mode audit, offline/update flows, accessibility, iPhone testing, bug fixes | ⏭ Next |
+| **M6 — Automation inbox** | Cloudflare Worker/D1, PWA review flow, iOS 27 Shortcut recipe | ◐ Code complete; Cloudflare deploy + real-notification test pending |
 
-**Remaining:** roughly 0.5–1 focused day, mostly on-device QA.
+**Remaining:** roughly 0.5–1 focused day plus backend deployment and device QA.
 
 **M0 exit criteria:** the app is reachable on a public HTTPS URL, installs to the home screen, launches standalone, and renders the shell offline.
 **v1 exit criteria:** all flows work on-device in light/dark, offline, with a successful backup → wipe → restore cycle.
@@ -434,7 +436,8 @@ When `display-mode` is not standalone and the device is iOS Safari, show a dismi
 
 ## 15. Immediate Next Steps
 
-1. Install/deploy v0.5.0 and verify currency + appearance persistence and the backup → restore cycle on the iPhone.
-2. Make a first real backup before entering ongoing expenses.
-3. Final device QA: safe areas, keyboard/date picker, share sheet, offline reload, update banner.
-4. Revisit search/category filters in v1.1.
+1. Deploy the inbox: `wrangler login`, create D1, apply `server/schema.sql`, set `WRITE_TOKEN`/`READ_TOKEN`, deploy.
+2. Enter the Worker URL and read token in **Settings → Automation** and test the connection.
+3. Create the iOS 27 notification Shortcut using `server/README.md`; send a real notification.
+4. Review imports in the PWA, then finish device QA: safe areas, share sheet, offline reload, update banner.
+5. Revisit search/category filters in v1.1.

@@ -7,6 +7,8 @@ import { UpdatePrompt } from './components/UpdatePrompt'
 import { db } from './db/database'
 import { AddExpenseSheet } from './features/expenses/AddExpenseSheet'
 import { HomeScreen } from './features/home/HomeScreen'
+import { ImportReview } from './features/imports/ImportReview'
+import { useInbox } from './features/imports/useInbox'
 import { InsightsScreen } from './features/insights/InsightsScreen'
 import { SettingsScreen } from './features/settings/SettingsScreen'
 import { currentMonthStart, monthOfISO } from './lib/dates'
@@ -26,7 +28,9 @@ function App() {
   const [month, setMonth] = useState(() => currentMonthStart())
   const [sheet, setSheet] = useState<SheetState | null>(null)
   const [toast, setToast] = useState<ToastState | null>(null)
+  const [reviewOpen, setReviewOpen] = useState(false)
   const settings = useLiveQuery(() => db.settings.get('app'), [])
+  const { pending: pendingImports, removePending } = useInbox()
 
   useEffect(() => {
     if (!settings) return
@@ -105,6 +109,10 @@ function App() {
               onAdd={() => openSheet({ mode: 'new' })}
               onEdit={(expense) => openSheet({ mode: 'edit', expense })}
               onOpenSettings={() => setTab('settings')}
+              pendingImportsCount={pendingImports.length}
+              onReviewImports={() => {
+                if (pendingImports.length > 0) setReviewOpen(true)
+              }}
             />
           )}
           {tab === 'insights' && (
@@ -146,6 +154,14 @@ function App() {
           message={toast.message}
           onUndo={toast.onUndo}
           onDismiss={() => setToast(null)}
+        />
+      )}
+
+      {reviewOpen && (
+        <ImportReview
+          items={pendingImports}
+          onClose={() => setReviewOpen(false)}
+          onImported={removePending}
         />
       )}
 
