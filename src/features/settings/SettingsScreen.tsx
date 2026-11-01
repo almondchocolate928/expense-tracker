@@ -6,9 +6,10 @@ import {
   Database,
   Download,
   FileSpreadsheet,
-  Palette,
+  Globe,
   Share,
   Smartphone,
+  SunMoon,
   Tag,
   Tags,
   Upload,
@@ -30,7 +31,46 @@ import { isIOS, isStandalone } from '../../lib/platform'
 import { CategoryManager } from '../categories/CategoryManager'
 import { RestoreConfirm } from './RestoreConfirm'
 
-const APP_VERSION = '0.4.0'
+const APP_VERSION = '0.5.0'
+
+const CURRENCIES = [
+  'USD',
+  'EUR',
+  'GBP',
+  'JPY',
+  'CNY',
+  'TWD',
+  'INR',
+  'CAD',
+  'AUD',
+  'NZD',
+  'SGD',
+  'HKD',
+  'KRW',
+  'CHF',
+  'SEK',
+  'NOK',
+  'DKK',
+  'BRL',
+  'MXN',
+  'ZAR',
+  'AED',
+  'SAR',
+  'THB',
+  'MYR',
+  'IDR',
+  'PHP',
+  'VND',
+  'TRY',
+  'PLN',
+  'CZK',
+]
+
+const THEMES = [
+  { value: 'system', label: 'System' },
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+] as const
 
 interface SectionProps {
   title: string
@@ -131,6 +171,16 @@ export function SettingsScreen() {
   const locale = settings?.locale ?? getLocale()
   const activeCategories = (categories ?? []).filter((category) => !category.archived).length
   const archivedCategories = (categories ?? []).filter((category) => category.archived).length
+  const currencyOptions = Array.from(
+    new Set([settings?.currency ?? 'USD', ...CURRENCIES]),
+  )
+
+  async function updateSetting(patch: {
+    currency?: string
+    theme?: 'system' | 'light' | 'dark'
+  }) {
+    await db.settings.update('app', patch)
+  }
 
   const lastBackupLabel = settings
     ? settings.lastBackupAt
@@ -292,9 +342,66 @@ export function SettingsScreen() {
           <ChevronRight size={18} className="shrink-0 text-tertiary" />
         </button>
         <div className="border-t border-separator" />
-        <Row icon={Tag} label="Currency" value={settings?.currency ?? '—'} />
+        <div className="px-4 py-3.5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-2 text-secondary">
+              <Tag size={18} strokeWidth={1.9} />
+            </div>
+            <label htmlFor="currency" className="flex-1 text-[15px] font-medium">
+              Currency
+            </label>
+            <select
+              id="currency"
+              value={settings?.currency ?? 'USD'}
+              onChange={(event) => void updateSetting({ currency: event.target.value })}
+              className="max-w-[110px] border-0 bg-transparent text-right text-[14px] font-medium text-secondary"
+            >
+              {currencyOptions.map((code) => (
+                <option key={code} value={code}>
+                  {code}
+                </option>
+              ))}
+            </select>
+          </div>
+          <p className="mt-2 pl-12 text-[11px] leading-snug text-tertiary">
+            Relabels past amounts; it does not convert them.
+          </p>
+        </div>
         <div className="border-t border-separator" />
-        <Row icon={Palette} label="Locale" value={locale} />
+        <div className="px-4 py-3.5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-2 text-secondary">
+              <SunMoon size={18} strokeWidth={1.9} />
+            </div>
+            <p className="flex-1 text-[15px] font-medium">Appearance</p>
+          </div>
+          <div
+            role="group"
+            aria-label="Appearance"
+            className="mt-3 grid grid-cols-3 gap-1 rounded-[10px] bg-surface-2 p-1"
+          >
+            {THEMES.map((option) => {
+              const selected = (settings?.theme ?? 'system') === option.value
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => void updateSetting({ theme: option.value })}
+                  className={`h-8 rounded-[8px] text-[12px] font-medium transition-colors ${
+                    selected
+                      ? 'bg-surface text-label shadow-sm'
+                      : 'text-secondary'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+        <div className="border-t border-separator" />
+        <Row icon={Globe} label="Locale" value={locale} />
       </Section>
 
       <Section title="Your data">
@@ -373,7 +480,7 @@ export function SettingsScreen() {
       <Section title="About">
         <Row icon={Tag} label="Version" value={APP_VERSION} />
         <div className="border-t border-separator" />
-        <Row icon={Database} label="Build" value="Insights" />
+        <Row icon={Database} label="Build" value="Settings" />
       </Section>
 
       <p className="px-6 pb-4 pt-6 text-center text-[11px] leading-relaxed text-tertiary">

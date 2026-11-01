@@ -1,5 +1,6 @@
 import { Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useLiveQuery } from 'dexie-react-hooks'
 import { TabBar } from './components/TabBar'
 import { UndoToast } from './components/UndoToast'
 import { UpdatePrompt } from './components/UpdatePrompt'
@@ -23,6 +24,29 @@ function App() {
   const [month, setMonth] = useState(() => currentMonthStart())
   const [sheet, setSheet] = useState<SheetState | null>(null)
   const [toast, setToast] = useState<ToastState | null>(null)
+  const settings = useLiveQuery(() => db.settings.get('app'), [])
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+
+    function applyTheme() {
+      const preference = settings?.theme ?? 'system'
+      if (preference === 'system') {
+        delete document.documentElement.dataset.theme
+      } else {
+        document.documentElement.dataset.theme = preference
+      }
+
+      const dark = preference === 'dark' || (preference === 'system' && media.matches)
+      document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => {
+        meta.setAttribute('content', dark ? '#000000' : '#F2F2F7')
+      })
+    }
+
+    applyTheme()
+    media.addEventListener('change', applyTheme)
+    return () => media.removeEventListener('change', applyTheme)
+  }, [settings?.theme])
 
   useEffect(() => {
     if (!toast) return
