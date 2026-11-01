@@ -1,17 +1,21 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useMemo } from 'react'
-import { ChevronLeft, ChevronRight, ChartPie, Sparkles } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChartPie } from 'lucide-react'
+import { addMonths, endOfMonth, format, getDaysInMonth, startOfMonth } from 'date-fns'
 import { db } from '../../db/database'
 import { CATEGORY_HEX, categoryTint } from '../../lib/colors'
 import {
   isCurrentMonth,
+  monthKey,
   monthName,
-  monthRange,
+  monthOfISO,
   monthYear,
   shiftMonth,
+  toISO,
+  todayISO,
 } from '../../lib/dates'
 import { formatMoney, getLocale } from '../../lib/money'
-import type { Category, CategoryColor } from '../../types'
+import type { Category, CategoryColor, Expense } from '../../types'
 
 interface InsightsScreenProps {
   month: Date
@@ -30,30 +34,65 @@ interface CategoryRow {
 export function InsightsScreen({ month, onMonthChange }: InsightsScreenProps) {
   const settings = useLiveQuery(() => db.settings.get('app'), [])
   const categories = useLiveQuery(() => db.categories.toArray(), [])
-  const { start, end } = monthRange(month)
-  const expenses = useLiveQuery(
+
+  const trendStart = toISO(startOfMonth(addMonths(month, -5)))
+  const trendEnd = toISO(endOfMonth(month))
+  const trendExpenses = useLiveQuery(
     () =>
       db.expenses
         .where('date')
-        .between(start, end, true, true)
+        .between(trendStart, trendEnd, true, true)
         .filter((expense) => expense.deletedAt === null)
         .toArray(),
-    [start, end],
+    [trendStart, trendEnd],
   )
 
   const currency = settings?.currency ?? 'USD'
   const locale = settings?.locale ?? getLocale()
+  const selectedKey = monthKey(month)
   const categoryById = useMemo(
     () => new Map<string, Category>((categories ?? []).map((category) => [category.id, category])),
     [categories],
   )
 
-  const total = (expenses ?? []).reduce((sum, expense) => sum + expense.amount, 0)
-  const count = expenses?.length ?? 0
+  const selectedExpenses = useMemo(
+    () => (trendExpenses ?? []).filter((expense) => expense.date.startsWith(selectedKey)),
+    [trendExpenses, selectedKey],
+  )
+  const total = selectedExpenses.reduce((sum, expense) => sum + expense.amount, 0)
+  const count = selectedExpenses.length
+
+  const trend = useMemo(() => {
+    const totals = new Map<string, number>()
+    for (const expense of trendExpenses ?? []) {
+      const key = expense.date.slice(0, 7)
+      totals.set(key, (totals.get(key) ?? 0) + expense.amount)
+    }
+
+    return Array.from({ length: 6 }, (_, index) => {
+      const date = addMonths(month, index - 5)
+      const key = format(date, 'yyyy-MM')
+      return {
+        key,
+        label: format(date, 'MMM'),
+        total: totals.get(key) ?? 0,
+      }
+    })
+  }, [month, trendExpenses])
+
+  const maxTotal = Math.max(0, ...trend.map((item) => item.total))
+  const largest = useMemo(
+    () =>
+      selectedExpenses.reduce<Expense | null>(
+        (maximum, expense) => (!maximum || expense.amount > maximum.amount ? expense : maximum),
+        null,
+      ),
+    [selectedExpenses],
+  )
 
   const rows: CategoryRow[] = useMemo(() => {
     const totals = new Map<string, number>()
-    for (const expense of expenses ?? []) {
+    for (const expense of selectedExpenses) {
       totals.set(expense.categoryId, (totals.get(expense.categoryId) ?? 0) + expense.amount)
     }
 
@@ -70,9 +109,12 @@ export function InsightsScreen({ month, onMonthChange }: InsightsScreenProps) {
         }
       })
       .sort((a, b) => b.amount - a.amount)
-  }, [expenses, categoryById, total])
+  }, [selectedExpenses, categoryById, total])
 
   const current = isCurrentMonth(month)
+  const daysInMonth = getDaysInMonth(month)
+  const daysElapsed = current ? Number(todayISO().slice(8, 10)) : daysInMonth
+  const dailyAverage = total > 0 ? Math.round(total / daysElapsed) : 0
 
   return (
     <div>
@@ -124,75 +166,151 @@ export function InsightsScreen({ month, onMonthChange }: InsightsScreenProps) {
         </div>
       </div>
 
-      {expenses === undefined ? (
+      {trendExpenses === undefined ? (
         <div className="mt-5 px-4">
           <div className="h-56 animate-pulse rounded-[24px] bg-surface" />
         </div>
-      ) : rows.length === 0 ? (
-        <div className="mt-5 px-4">
-          <div className="rounded-[24px] bg-surface px-6 py-9 text-center">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-accent-soft text-accent">
-              <ChartPie size={26} strokeWidth={1.9} />
-            </div>
-            <h2 className="mt-4 text-[19px] font-semibold">No breakdown yet</h2>
-            <p className="mx-auto mt-1.5 max-w-[270px] text-[14px] leading-snug text-secondary">
-              Add an expense and this month's categories will show up here.
-            </p>
-          </div>
-        </div>
       ) : (
-        <div className="mt-5 px-4">
-          <h2 className="mb-2 px-1 text-[13px] font-semibold text-secondary">
-            By category
-          </h2>
-          <div className="rounded-[24px] bg-surface px-4">
-            {rows.map((row, index) => (
-              <div
-                key={row.id}
-                className={`py-3.5 ${index > 0 ? 'border-t border-separator' : ''}`}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[19px]"
-                    style={{ backgroundColor: categoryTint(row.color) }}
-                    aria-hidden="true"
-                  >
-                    {row.emoji}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[15px] font-medium">{row.name}</p>
-                    <p className="amount-tabular text-[12px] text-secondary">
-                      {Math.round(row.percent)}% of month
-                    </p>
-                  </div>
-                  <p className="amount-tabular shrink-0 text-[15px] font-semibold">
-                    {formatMoney(row.amount, currency, locale)}
-                  </p>
+        <>
+          {maxTotal > 0 && (
+            <div className="mt-5 px-4">
+              <div className="rounded-[24px] bg-surface p-5">
+                <div className="flex items-baseline justify-between gap-3">
+                  <h2 className="text-[13px] font-semibold text-secondary">Last 6 months</h2>
+                  <span className="amount-tabular text-[12px] font-medium text-secondary">
+                    {monthName(month)} · {formatMoney(total, currency, locale)}
+                  </span>
                 </div>
-                <div className="ml-[52px] mt-2 h-1.5 overflow-hidden rounded-full bg-surface-2">
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${Math.max(row.percent, 2)}%`,
-                      backgroundColor: CATEGORY_HEX[row.color],
-                    }}
-                  />
+                <div className="mt-4 flex items-end gap-2">
+                  {trend.map((item) => {
+                    const selected = item.key === selectedKey
+                    const height = maxTotal > 0 ? (item.total / maxTotal) * 100 : 0
+                    return (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => onMonthChange(monthOfISO(`${item.key}-01`))}
+                        aria-current={selected ? 'date' : undefined}
+                        aria-label={`Show ${item.label} ${item.key.slice(0, 4)}, ${formatMoney(
+                          item.total,
+                          currency,
+                          locale,
+                        )}`}
+                        className="flex min-w-0 flex-1 flex-col items-center gap-2"
+                      >
+                        <div className="flex h-28 w-full items-end justify-center">
+                          <div
+                            className={`w-full max-w-[26px] rounded-t-[6px] transition-colors ${
+                              selected ? 'bg-accent' : 'bg-accent-soft'
+                            }`}
+                            style={{
+                              height: `${item.total > 0 ? Math.max(height, 6) : 3}%`,
+                            }}
+                          />
+                        </div>
+                        <span
+                          className={`text-[10px] font-medium ${
+                            selected ? 'text-accent' : 'text-secondary'
+                          }`}
+                        >
+                          {item.label}
+                        </span>
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+            </div>
+          )}
 
-      <div className="mt-5 px-4">
-        <div className="flex gap-3 rounded-[20px] border border-dashed border-separator p-4">
-          <Sparkles size={18} className="mt-0.5 shrink-0 text-accent" />
-          <p className="text-[13px] leading-snug text-secondary">
-            Six-month trends and daily averages arrive in the next build. Category breakdown
-            is live now.
-          </p>
-        </div>
-      </div>
+          {total > 0 && (
+            <div className="mt-5 grid grid-cols-2 gap-3 px-4">
+              <div className="rounded-[20px] bg-surface p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.7px] text-secondary">
+                  Daily average
+                </p>
+                <p className="amount-tabular mt-1 text-[22px] font-semibold">
+                  {formatMoney(dailyAverage, currency, locale)}
+                </p>
+                <p className="mt-0.5 text-[11px] text-secondary">
+                  {current
+                    ? `Over ${daysElapsed} ${daysElapsed === 1 ? 'day' : 'days'}`
+                    : `Over ${daysInMonth} days`}
+                </p>
+              </div>
+              <div className="rounded-[20px] bg-surface p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.7px] text-secondary">
+                  Largest
+                </p>
+                <p className="amount-tabular mt-1 text-[22px] font-semibold">
+                  {largest ? formatMoney(largest.amount, currency, locale) : '—'}
+                </p>
+                <p className="mt-0.5 truncate text-[11px] text-secondary">
+                  {largest ? (categoryById.get(largest.categoryId)?.name ?? 'Uncategorized') : '—'}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {rows.length === 0 ? (
+            <div className="mt-5 px-4">
+              <div className="rounded-[24px] bg-surface px-6 py-9 text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-accent-soft text-accent">
+                  <ChartPie size={26} strokeWidth={1.9} />
+                </div>
+                <h2 className="mt-4 text-[19px] font-semibold">
+                  No spending in {monthName(month)}
+                </h2>
+                <p className="mx-auto mt-1.5 max-w-[270px] text-[14px] leading-snug text-secondary">
+                  Add an expense from Home, or choose another month from the chart.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-5 px-4">
+              <h2 className="mb-2 px-1 text-[13px] font-semibold text-secondary">
+                By category
+              </h2>
+              <div className="rounded-[24px] bg-surface px-4">
+                {rows.map((row, index) => (
+                  <div
+                    key={row.id}
+                    className={`py-3.5 ${index > 0 ? 'border-t border-separator' : ''}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[19px]"
+                        style={{ backgroundColor: categoryTint(row.color) }}
+                        aria-hidden="true"
+                      >
+                        {row.emoji}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[15px] font-medium">{row.name}</p>
+                        <p className="amount-tabular text-[12px] text-secondary">
+                          {Math.round(row.percent)}% of month
+                        </p>
+                      </div>
+                      <p className="amount-tabular shrink-0 text-[15px] font-semibold">
+                        {formatMoney(row.amount, currency, locale)}
+                      </p>
+                    </div>
+                    <div className="ml-[52px] mt-2 h-1.5 overflow-hidden rounded-full bg-surface-2">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${Math.max(row.percent, 2)}%`,
+                          backgroundColor: CATEGORY_HEX[row.color],
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 }

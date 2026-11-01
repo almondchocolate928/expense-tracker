@@ -4,7 +4,7 @@ A private, offline-first expense tracker built as an installable PWA for iPhone.
 
 **Live app:** <https://almondchocolate928.github.io/expense-tracker/>
 
-> **Status: v0.3.0 (backup).** You can add, edit, delete with Undo, manage categories, and back up/restore your data. Currency/theme controls and charts are the remaining feature work.
+> **Status: v0.4.0 (insights).** Add, edit, delete with Undo, manage categories, back up/restore, and review six-month trends. Currency/theme controls and filters remain.
 
 ## What works today
 
@@ -16,7 +16,8 @@ A private, offline-first expense tracker built as an installable PWA for iPhone.
 - Monthly Home screen with total, expense count, and comparison to the same point last month
 - Expenses grouped by day with per-day totals
 - Month navigation (past months, back to today)
-- Insights tab with month total and category breakdown
+- Insights: six-month bar chart, daily average, largest expense, and category breakdown
+- Tapping a month bar in Insights changes the selected month across the app
 - JSON backup/restore through Files or iCloud Drive
 - CSV export for Numbers or Excel
 - A Home reminder until the first backup is made
@@ -129,6 +130,5 @@ PLAN.md              Product and architecture plan
 - No search or category filters yet (deferred)
 - No automatic sync; PWAs cannot access iCloud/CloudKit
 - No home-screen widgets, haptics, or App Store distribution
-- Charts beyond the category breakdown are pending (M3)
 
 See [PLAN.md](./PLAN.md) for the full roadmap and rationale.

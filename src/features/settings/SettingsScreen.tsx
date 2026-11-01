@@ -30,7 +30,7 @@ import { isIOS, isStandalone } from '../../lib/platform'
 import { CategoryManager } from '../categories/CategoryManager'
 import { RestoreConfirm } from './RestoreConfirm'
 
-const APP_VERSION = '0.3.0'
+const APP_VERSION = '0.4.0'
 
 interface SectionProps {
   title: string
@@ -373,7 +373,7 @@ export function SettingsScreen() {
       <Section title="About">
         <Row icon={Tag} label="Version" value={APP_VERSION} />
         <div className="border-t border-separator" />
-        <Row icon={Database} label="Build" value="Backup" />
+        <Row icon={Database} label="Build" value="Insights" />
       </Section>
 
       <p className="px-6 pb-4 pt-6 text-center text-[11px] leading-relaxed text-tertiary">

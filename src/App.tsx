@@ -81,7 +81,7 @@ function App() {
         </div>
       </main>
 
-      {tab !== 'settings' && !sheet && !toast && (
+      {tab === 'home' && !sheet && !toast && (
         <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40">
           <div className="mx-auto flex w-full max-w-[560px] justify-end px-4 pb-[calc(env(safe-area-inset-bottom)+84px)]">
             <button

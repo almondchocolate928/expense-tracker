@@ -1,6 +1,6 @@
 # Expense Tracker — Build Plan
 
-**Status:** M0–M2 + backup complete (v0.3.0); insights/settings polish next
+**Status:** M0–M3 + backup complete (v0.4.0); settings/filters polish next
 **Date:** 2026-11-01
 **Type:** Installable Progressive Web App (PWA) for iPhone
 **Target device:** iPhone, iOS 27.2
@@ -10,17 +10,16 @@
 
 ### Current state
 
+- v0.4.0 adds a six-month trend chart, daily average, largest expense, and clickable month bars
 - v0.3.0 adds JSON backup/restore, CSV export, and a Home backup reminder
 - v0.2.0 adds tap-to-edit, delete with Undo, and full category management
-- Categories: add, rename, icon/color, reorder, archive, and restore; archived categories remain on past expenses
 - Installable PWA shell with custom iOS-style design, light/dark mode, safe-area handling
 - Core loop: add expense (custom keypad, category, date, note) → Home list + monthly total
 - Local persistence in IndexedDB, verified across reloads
-- Monthly navigation and same-period comparison to last month
-- Insights: month total + category breakdown (six-month charts pending)
+- Insights: month hero, six-month bars, summary stats, category breakdown
 - PWA: manifest, icons, offline app shell, update prompt, iOS install card
-- Deployment verified on GitHub Pages; M2/M4 flows verified in Playwright, including iPhone SE layout
-- Not yet: currency/theme controls, filters, six-month charts, real-device install
+- Deployment verified on GitHub Pages; M2/M3/M4 flows verified in Playwright, including iPhone SE layout
+- Not yet: currency/theme controls, filters, real-device install
 
 ---
 
@@ -94,7 +93,7 @@ As of iOS 26, any site added to the Home Screen opens as a standalone web app by
 | Styling | Tailwind CSS v4 + CSS variables | Fast iteration, consistent design tokens |
 | Data | Dexie (IndexedDB) + `dexie-react-hooks` | Robust local storage, live queries, indexes |
 | Dates | `date-fns` | Lightweight, tree-shakeable local-date helpers |
-| Charts | Recharts | Simple bar/donut charts, responsive SVG |
+| Charts | Native CSS bars | No chart dependency; small, theme-aware, accessible buttons |
 | Icons | `lucide-react` | Clean stroke icons close to SF Symbols |
 | Validation | Zod | Validate backup files on import |
 | PWA | `vite-plugin-pwa` (Workbox) | Manifest, service worker, update prompt |
@@ -226,7 +225,7 @@ Categories are fully editable and reorderable; defaults are only a starting poin
 ### Navigation
 
 Three tabs in a floating, translucent bottom bar: **Home**, **Insights**, **Settings**.
-A circular **+** button floats above the tab bar on Home and Insights.
+A circular **+** button floats above the tab bar on Home. Insights reuses the month selector and chart, so adding from there is one tab away.
 The add/edit form opens as a bottom sheet.
 
 ### 7.1 Home — This Month
@@ -261,7 +260,7 @@ Details:
 For the selected month (shared month state with Home):
 
 - **Last 6 months** bar chart with the selected month highlighted.
-- **Spending by category** donut plus a ranked list: emoji, name, amount, percentage.
+- **Spending by category** ranked list with proportional bars: emoji, name, amount, percentage.
 - **Summary stats**: daily average (to date), largest single expense, transaction count.
 - Tapping a category row could filter Home later (v1.1).
 
@@ -372,11 +371,11 @@ When `display-mode` is not standalone and the device is iOS Safari, show a dismi
 | **M0 — Foundations** | Vite/React/TS scaffold, Tailwind tokens, tab shell, PWA manifest + icons, GitHub Pages workflow, installable on iPhone | ✅ Complete — live on GitHub Pages |
 | **M1 — Core loop** | Dexie schema + seed categories, add-expense sheet with keypad, Home list + monthly total, instant persistence | ✅ Complete |
 | **M2 — Manage** | Edit/delete + undo, category management (add/edit/reorder/archive), filters | ✅ Complete (filters deferred) |
-| **M3 — Insights** | 6-month bar chart, category donut/list, summary stats, month sync with Home | ◐ Category breakdown shipped; trends pending |
+| **M3 — Insights** | 6-month bar chart, category list, summary stats, month sync with Home | ✅ Complete |
 | **M4 — Data safety & settings** | Settings screen, currency + theme, JSON backup/restore, CSV export, backup reminder | ◐ Backup/restore, CSV, and reminder shipped; currency/theme pending |
 | **M5 — Polish & device QA** | Animations, safe areas, dark mode audit, offline/update flows, accessibility, iPhone testing, bug fixes | Pending |
 
-**Remaining:** roughly 1–3 focused days after device review.
+**Remaining:** roughly 1–2 focused days after device review.
 
 **M0 exit criteria:** the app is reachable on a public HTTPS URL, installs to the home screen, launches standalone, and renders the shell offline.
 **v1 exit criteria:** all flows work on-device in light/dark, offline, with a successful backup → wipe → restore cycle.
@@ -389,7 +388,7 @@ When `display-mode` is not standalone and the device is iOS Safari, show a dismi
 
 - Unit: money parsing/formatting (including zero-decimal currencies), date grouping, month-range boundaries, backup validation and round-trip.
 - Component: amount keypad, add/edit form validation.
-- Playwright smoke at iPhone viewport: add → edit amount/date → reload persists → delete/undo → category add/rename/reorder/archive/restore → backup → restore → CSV → invalid file rejected.
+- Playwright smoke at iPhone viewport: add → edit amount/date → reload persists → delete/undo → category add/rename/reorder/archive/restore → backup → restore → CSV → invalid file rejected → six-month chart/stat calculations.
 
 **Manual on iPhone**
 
@@ -431,8 +430,8 @@ When `display-mode` is not standalone and the device is iOS Safari, show a dismi
 
 ## 15. Immediate Next Steps
 
-1. Install/deploy v0.3.0 and verify editing, category management, and a real backup → restore cycle on the iPhone.
+1. Install/deploy v0.4.0 and verify the Insights chart/stats and backup flow on the iPhone.
 2. Make a first real backup before entering ongoing expenses.
-3. Add the six-month trend and summary stats to Insights.
-4. Add currency/theme controls in Settings.
-5. Revisit search/category filters in v1.1.
+3. Add currency/theme controls in Settings.
+4. Revisit search/category filters in v1.1.
+5. Final accessibility and device QA.
