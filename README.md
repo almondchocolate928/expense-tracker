@@ -4,7 +4,7 @@ A private, offline-first expense tracker built as an installable PWA for iPhone.
 
 **Live app:** <https://almondchocolate928.github.io/expense-tracker/>
 
-> **Status: v0.5.0 (settings).** Add, edit, delete with Undo, manage categories, back up/restore, review six-month trends, and choose currency or appearance. Search/filters and final device QA remain.
+> **Status: v0.5.1 (settings).** Add, edit, delete with Undo, manage categories, back up/restore, review six-month trends, and choose currency or appearance. Search/filters and final device QA remain.
 
 ## What works today
 
@@ -18,7 +18,7 @@ A private, offline-first expense tracker built as an installable PWA for iPhone.
 - Month navigation (past months, back to today)
 - Insights: six-month bar chart, daily average, largest expense, and category breakdown
 - Tapping a month bar in Insights changes the selected month across the app
-- Currency selector and System/Light/Dark appearance setting
+- Searchable currency picker and System/Light/Dark appearance setting
 - JSON backup/restore through Files or iCloud Drive
 - CSV export for Numbers or Excel
 - A Home reminder until the first backup is made
