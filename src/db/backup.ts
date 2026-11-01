@@ -125,18 +125,14 @@ export async function buildBackup(): Promise<BackupFile> {
   }
 }
 
-async function shareBackup(backup: BackupFile): Promise<'shared' | 'downloaded'> {
-  const json = JSON.stringify(backup, null, 2)
-  const fileName = backupFileName()
-  const file = new File([json], fileName, { type: 'application/json' })
-
+async function shareOrDownload(file: File, title: string): Promise<'shared' | 'downloaded'> {
   if (
     typeof navigator.share === 'function' &&
     typeof navigator.canShare === 'function' &&
     navigator.canShare({ files: [file] })
   ) {
     try {
-      await navigator.share({ title: 'Expense Tracker backup', files: [file] })
+      await navigator.share({ title, files: [file] })
       return 'shared'
     } catch (error) {
       if (isShareCanceled(error)) throw error
@@ -144,8 +140,15 @@ async function shareBackup(backup: BackupFile): Promise<'shared' | 'downloaded'>
     }
   }
 
-  triggerDownload(json, fileName, 'application/json')
+  triggerDownload(file, file.name, file.type || 'application/json')
   return 'downloaded'
+}
+
+async function shareBackup(backup: BackupFile): Promise<'shared' | 'downloaded'> {
+  const file = new File([JSON.stringify(backup, null, 2)], backupFileName(), {
+    type: 'application/json',
+  })
+  return shareOrDownload(file, 'Expense Tracker backup')
 }
 
 export async function backUpNow(): Promise<'shared' | 'downloaded'> {
@@ -155,17 +158,17 @@ export async function backUpNow(): Promise<'shared' | 'downloaded'> {
   return method
 }
 
-/**
- * Download a copy without opening the share sheet. Used automatically before a
- * restore replaces the current database.
- */
-export async function downloadSafetyBackup(): Promise<void> {
+export async function createSafetyBackupFile(): Promise<File> {
   const backup = await buildBackup()
-  triggerDownload(
-    JSON.stringify(backup, null, 2),
+  return new File(
+    [JSON.stringify(backup, null, 2)],
     `expenses-before-restore-${format(new Date(), 'yyyy-MM-dd-HHmm')}.json`,
-    'application/json',
+    { type: 'application/json' },
   )
+}
+
+export async function saveSafetyBackup(file: File): Promise<void> {
+  await shareOrDownload(file, 'Expense Tracker safety copy')
 }
 
 function csvCell(value: string): string {

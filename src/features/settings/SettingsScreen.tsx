@@ -19,11 +19,12 @@ import type { ChangeEvent, ReactNode } from 'react'
 import { db } from '../../db/database'
 import {
   backUpNow,
-  downloadSafetyBackup,
+  createSafetyBackupFile,
   exportCsv,
   isShareCanceled,
   parseBackupFile,
   restoreBackup,
+  saveSafetyBackup,
   type BackupFile,
 } from '../../db/backup'
 import { getLocale } from '../../lib/money'
@@ -32,7 +33,7 @@ import { CategoryManager } from '../categories/CategoryManager'
 import { CurrencyPicker } from './CurrencyPicker'
 import { RestoreConfirm } from './RestoreConfirm'
 
-const APP_VERSION = '0.5.2'
+const APP_VERSION = '0.5.3'
 
 const THEMES = [
   { value: 'system', label: 'System' },
@@ -135,6 +136,7 @@ export function SettingsScreen() {
   const [pendingRestore, setPendingRestore] = useState<{
     backup: BackupFile
     fileName: string
+    safetyFile: File
   } | null>(null)
   const restoreInputRef = useRef<HTMLInputElement>(null)
   const locale = settings?.locale ?? getLocale()
@@ -208,7 +210,8 @@ export function SettingsScreen() {
     void (async () => {
       try {
         const backup = await parseBackupFile(file)
-        setPendingRestore({ backup, fileName: file.name })
+        const safetyFile = await createSafetyBackupFile()
+        setPendingRestore({ backup, fileName: file.name, safetyFile })
       } catch (error) {
         setBackupStatus({
           message:
@@ -228,11 +231,12 @@ export function SettingsScreen() {
     setBackupBusy(true)
 
     try {
-      await downloadSafetyBackup()
+      await saveSafetyBackup(pendingRestore.safetyFile)
       await restoreBackup(pendingRestore.backup)
       setPendingRestore(null)
       setBackupStatus({ message: 'Backup restored. All data was replaced.' })
-    } catch {
+    } catch (error) {
+      if (isShareCanceled(error)) return
       setPendingRestore(null)
       setBackupStatus({
         message: 'Could not restore that backup. Your current data was not changed.',

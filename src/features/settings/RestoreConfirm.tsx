@@ -87,7 +87,7 @@ export function RestoreConfirm({
 
           <div className="mt-3 flex items-start gap-2 rounded-[14px] bg-accent-soft p-3 text-[12px] leading-snug text-accent">
             <Download size={15} className="mt-0.5 shrink-0" />
-            <span>A safety copy of your current data will be downloaded first.</span>
+            <span>You'll be asked to save a safety copy of your current data first.</span>
           </div>
 
           <button

@@ -4,7 +4,7 @@ A private, offline-first expense tracker built as an installable PWA for iPhone.
 
 **Live app:** <https://almondchocolate928.github.io/expense-tracker/>
 
-> **Status: v0.5.2 (settings).** Add, edit, delete with Undo, manage categories, back up/restore, review six-month trends, and choose currency or appearance. Search/filters and final device QA remain.
+> **Status: v0.5.3 (settings).** Add, edit, delete with Undo, manage categories, back up/restore, review six-month trends, and choose currency or appearance. Search/filters and final device QA remain.
 
 ## What works today
 
@@ -100,7 +100,7 @@ Everything is stored on the device in IndexedDB. There is no network request for
 
 **Important:** iOS can evict local storage when space is low, and deleting the Home Screen app can remove its data. Use **Settings → Your data → Back up now** regularly. The app reminds you on Home when a backup is missing or stale.
 
-Backups are JSON files shared through the iOS share sheet to Files or iCloud Drive. Restoring validates the file, downloads a safety copy of the current data, then replaces everything. CSV export is available for spreadsheets.
+Backups are JSON files shared through the iOS share sheet to Files or iCloud Drive. Restoring validates the file, asks you to save a safety copy of the current data first, then replaces everything. CSV export is available for spreadsheets.
 
 Backup files are **not encrypted** — they contain your expense data in plain JSON. Store them somewhere private.
 
