@@ -14,6 +14,8 @@ import type { Expense, Tab } from './types'
 
 type SheetState = { mode: 'new' } | { mode: 'edit'; expense: Expense }
 
+const THEME_CACHE_KEY = 'expense-tracker-theme'
+
 interface ToastState {
   message: string
   onUndo: () => void
@@ -27,10 +29,17 @@ function App() {
   const settings = useLiveQuery(() => db.settings.get('app'), [])
 
   useEffect(() => {
+    if (!settings) return
+    const preference = settings.theme
+    try {
+      localStorage.setItem(THEME_CACHE_KEY, preference)
+    } catch {
+      // The theme still applies for this session.
+    }
+
     const media = window.matchMedia('(prefers-color-scheme: dark)')
 
     function applyTheme() {
-      const preference = settings?.theme ?? 'system'
       if (preference === 'system') {
         delete document.documentElement.dataset.theme
       } else {
@@ -46,7 +55,7 @@ function App() {
     applyTheme()
     media.addEventListener('change', applyTheme)
     return () => media.removeEventListener('change', applyTheme)
-  }, [settings?.theme])
+  }, [settings])
 
   useEffect(() => {
     if (!toast) return

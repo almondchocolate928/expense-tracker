@@ -18,6 +18,26 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Expenses" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <script>
+      // Apply the cached theme before the app loads to avoid a light/dark flash.
+      // Keep the key in sync with THEME_CACHE_KEY in src/App.tsx.
+      ;(function () {
+        try {
+          var preference = localStorage.getItem('expense-tracker-theme')
+          var media = window.matchMedia('(prefers-color-scheme: dark)')
+          if (preference === 'light' || preference === 'dark') {
+            document.documentElement.dataset.theme = preference
+          }
+          var dark = preference === 'dark' || (preference !== 'light' && media.matches)
+          var color = dark ? '#000000' : '#F2F2F7'
+          document.querySelectorAll('meta[name="theme-color"]').forEach(function (meta) {
+            meta.setAttribute('content', color)
+          })
+        } catch (error) {
+          // localStorage can be unavailable; the app applies the saved theme after loading.
+        }
+      })()
+    </script>
     <title>Expense Tracker</title>
   </head>
   <body>

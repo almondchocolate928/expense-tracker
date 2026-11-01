@@ -111,3 +111,8 @@ export function previousComparisonRange(month: Date): {
     partial: false,
   }
 }
+
+export function isBackupStale(lastBackupAt: number | null, days = 30): boolean {
+  if (lastBackupAt === null) return true
+  return Date.now() - lastBackupAt > days * 24 * 60 * 60 * 1000
+}

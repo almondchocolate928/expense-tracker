@@ -32,7 +32,7 @@ import { CategoryManager } from '../categories/CategoryManager'
 import { CurrencyPicker } from './CurrencyPicker'
 import { RestoreConfirm } from './RestoreConfirm'
 
-const APP_VERSION = '0.5.1'
+const APP_VERSION = '0.5.2'
 
 const THEMES = [
   { value: 'system', label: 'System' },

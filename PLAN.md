@@ -1,6 +1,6 @@
 # Expense Tracker — Build Plan
 
-**Status:** M0–M4 complete (v0.5.1); M5 polish/device QA next
+**Status:** M0–M4 complete (v0.5.2); M5 polish/device QA next
 **Date:** 2026-11-01
 **Type:** Installable Progressive Web App (PWA) for iPhone
 **Target device:** iPhone, iOS 27.2
@@ -10,6 +10,7 @@
 
 ### Current state
 
+- v0.5.2 removes the cold-start theme flash and makes the backup reminder stale-aware (30 days)
 - v0.5.1 replaces the native currency select with a searchable, fully themed picker
 - v0.5.0 adds editable currency and System/Light/Dark appearance (manual override + system sync)
 - v0.4.0 adds a six-month trend chart, daily average, largest expense, and clickable month bars

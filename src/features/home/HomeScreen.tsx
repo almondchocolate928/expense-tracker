@@ -13,6 +13,7 @@ import { categoryTint } from '../../lib/colors'
 import {
   currentMonthStart,
   dayLabel,
+  isBackupStale,
   isCurrentMonth,
   monthName,
   monthRange,
@@ -117,7 +118,9 @@ export function HomeScreen({
   const isUp = percentChange > 0
   const current = isCurrentMonth(month)
   const needsBackup =
-    (totalExpenseCount ?? 0) > 0 && settings?.lastBackupAt === null
+    (totalExpenseCount ?? 0) > 0 &&
+    settings !== undefined &&
+    isBackupStale(settings.lastBackupAt)
 
   return (
     <div>
