@@ -1,7 +1,7 @@
 # Expense Tracker — Build Plan
 
-**Status:** M0–M4 complete + automation inbox code (v0.6.0); Cloudflare deploy/Shortcut pending
-**Date:** 2026-11-01
+**Status:** M0–M4 + automation inbox deployed (v0.6.0); Shortcut/device QA pending
+**Date:** 2026-11-02
 **Type:** Installable Progressive Web App (PWA) for iPhone
 **Target device:** iPhone, iOS 27.2
 **Live app:** <https://almondchocolate928.github.io/expense-tracker/>
@@ -10,7 +10,8 @@
 
 ### Current state
 
-- v0.6.0 adds a one-way Cloudflare Worker/D1 notification inbox and a PWA review flow
+- Cloudflare Worker + D1 inbox deployed; remote API and live PWA import flow verified
+- v0.6.0 adds the one-way notification inbox, PWA review flow, and Shortcut recipe
 - v0.5.3 sends the pre-restore safety copy through the share sheet instead of opening raw JSON in a browser page
 - v0.5.2 removes the cold-start theme flash and makes the backup reminder stale-aware (30 days)
 - v0.5.1 replaces the native currency select with a searchable, fully themed picker
@@ -23,8 +24,8 @@
 - Local persistence in IndexedDB, verified across reloads
 - Insights: month hero, six-month bars, summary stats, category breakdown
 - PWA: manifest, icons, offline app shell, update prompt, iOS install card
-- Deployment verified on GitHub Pages; M2/M3/M4 and inbox flows verified locally in Playwright, including iPhone SE layout
-- Not yet: Cloudflare inbox deployment, real notification Shortcut, search/filters, real-device install/QA
+- Deployment verified on GitHub Pages; M2/M3/M4 and inbox flows verified in Playwright, including iPhone SE layout
+- Not yet: iOS Shortcut setup, real notification test, search/filters, real-device install/QA
 
 ---
 
@@ -379,9 +380,9 @@ When `display-mode` is not standalone and the device is iOS Safari, show a dismi
 | **M3 — Insights** | 6-month bar chart, category list, summary stats, month sync with Home | ✅ Complete |
 | **M4 — Data safety & settings** | Settings screen, currency + theme, JSON backup/restore, CSV export, backup reminder | ✅ Complete |
 | **M5 — Polish & device QA** | Animations, safe areas, dark mode audit, offline/update flows, accessibility, iPhone testing, bug fixes | ⏭ Next |
-| **M6 — Automation inbox** | Cloudflare Worker/D1, PWA review flow, iOS 27 Shortcut recipe | ◐ Code complete; Cloudflare deploy + real-notification test pending |
+| **M6 — Automation inbox** | Cloudflare Worker/D1, PWA review flow, iOS 27 Shortcut recipe | ✅ Backend deployed; Shortcut/real-notification test pending |
 
-**Remaining:** roughly 0.5–1 focused day plus backend deployment and device QA.
+**Remaining:** roughly 0.5–1 focused day plus the Shortcut and device QA.
 
 **M0 exit criteria:** the app is reachable on a public HTTPS URL, installs to the home screen, launches standalone, and renders the shell offline.
 **v1 exit criteria:** all flows work on-device in light/dark, offline, with a successful backup → wipe → restore cycle.
@@ -436,8 +437,8 @@ When `display-mode` is not standalone and the device is iOS Safari, show a dismi
 
 ## 15. Immediate Next Steps
 
-1. Deploy the inbox: `wrangler login`, create D1, apply `server/schema.sql`, set `WRITE_TOKEN`/`READ_TOKEN`, deploy.
-2. Enter the Worker URL and read token in **Settings → Automation** and test the connection.
-3. Create the iOS 27 notification Shortcut using `server/README.md`; send a real notification.
-4. Review imports in the PWA, then finish device QA: safe areas, share sheet, offline reload, update banner.
+1. Configure the live PWA on the iPhone with the Worker URL and read token.
+2. Build the iOS 27 notification Shortcut using `server/README.md` and the write token.
+3. Send a real bank/payment notification, review the import, and confirm it saves once.
+4. Finish device QA: safe areas, share sheet, offline reload, update banner.
 5. Revisit search/category filters in v1.1.

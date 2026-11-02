@@ -4,7 +4,7 @@ A private, offline-first expense tracker built as an installable PWA for iPhone.
 
 **Live app:** <https://almondchocolate928.github.io/expense-tracker/>
 
-> **Status: v0.6.0 (automation inbox).** The iOS 27 Shortcut inbox and review flow are built and tested locally. The Cloudflare deployment and real-notification test are pending.
+> **Status: v0.6.0 (automation inbox deployed).** The Cloudflare Worker/D1 inbox and PWA review flow are live. The iOS Shortcut and real-notification test are the remaining setup step.
 
 ## What works today
 
@@ -143,7 +143,7 @@ PLAN.md              Product and architecture plan
 
 ## Known limitations
 
-- The automation backend is not deployed yet; it requires a Cloudflare account
+- The iOS 27 Shortcut and real-notification test are not set up yet
 - No search or category filters yet (deferred)
 - No automatic two-way sync; the inbox is one-way
 - No home-screen widgets, haptics, or App Store distribution

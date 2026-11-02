@@ -6,7 +6,7 @@ compatibility_date = "2026-10-01"
 binding = "DB"
 database_name = "expense-tracker-inbox"
 # Replace with the id printed by: wrangler d1 create expense-tracker-inbox
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "95722cde-78ae-4864-a980-f1bad06f4644"
 
 [triggers]
 crons = ["0 4 * * *"]
