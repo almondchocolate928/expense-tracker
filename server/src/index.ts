@@ -183,6 +183,32 @@ export default {
         return json({ ok: true })
       }
 
+      if (url.pathname === '/v1/debug' && request.method === 'POST') {
+        if (!authorized(request, env.WRITE_TOKEN)) {
+          return failure(401, 'Unauthorized')
+        }
+
+        const contentType = request.headers.get('content-type') ?? ''
+        const raw = (await request.text()).slice(0, 4000)
+        let parsed: unknown = null
+        try {
+          parsed = JSON.parse(raw)
+        } catch {
+          // The raw body is returned regardless.
+        }
+
+        return json({
+          ok: true,
+          contentType,
+          raw,
+          parsed,
+          keys:
+            parsed && typeof parsed === 'object'
+              ? Object.keys(parsed as Record<string, unknown>)
+              : [],
+        })
+      }
+
       if (url.pathname === '/v1/imports') {
         if (request.method === 'POST') return createImport(request, env)
         if (request.method === 'GET') return listImports(request, env)
