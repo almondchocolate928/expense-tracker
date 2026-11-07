@@ -122,8 +122,15 @@ the PWA's Automation Inbox settings.
    trigger.
 2. Choose the bank/payment app. Add a Title or Body filter if the app sends
    other notifications.
-3. Add a **UUID** action for `externalId` (or a date plus random number if your
-   Shortcuts version has no UUID action).
+3. Set `externalId` to a unique value for each notification. There is no reliable
+   built-in UUID action in Shortcuts, so use a **Text** action instead:
+   - Preferred: combine **Notification → Date**, **Notification → Title**, and
+     **Notification → Body** in one Text action.
+   - Fallback: combine **Current Date** and a **Random Number** in a Text action.
+   - A third-party app such as **Actions** can add a Generate UUID action if you
+     want a literal UUID.
+   Use that Text output as `externalId`. Do not use a fixed value; the Worker
+   deduplicates identical IDs.
 4. Add **Get Contents of URL**:
    - URL: your Worker `/v1/imports`
    - Method: `POST`
